@@ -114,6 +114,16 @@
         <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2@global/gems/gsl-2.1.0.1/rdoc" />
       </SOURCES>
     </library>
+    <library name="PDB (v0.0.1, RVM: ruby-2.1.2) [gem]">
+      <CLASSES>
+        <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2/gems/PDB-0.0.1/lib" />
+        <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2/gems/PDB-0.0.1/.idea" />
+      </CLASSES>
+      <SOURCES>
+        <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2/gems/PDB-0.0.1/lib" />
+        <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2/gems/PDB-0.0.1/.idea" />
+      </SOURCES>
+    </library>
     <library name="rubygems-bundler (v1.4.4, RVM: ruby-2.1.2 [global]) [gem]">
       <CLASSES>
         <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2@global/gems/rubygems-bundler-1.4.4/lib" />
