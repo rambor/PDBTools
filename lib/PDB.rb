@@ -38,10 +38,14 @@ module PDB
 
       # :CA => false
       # :CA => true
+      # @molecule.selectAtomsByType(flags)
+
       flags.each_pair do |key, value|
-        puts "KEY: #{key} => #{value}"
-        @molecule.selectAtomsByType((key.to_s).upcase)
+        if PDB::Atom.method_defined? key.downcase
+          @molecule.selectAtomsByType(key.downcase, value)
+        end
       end
+
     end
 
 

@@ -4,13 +4,15 @@ require "PDB/atom"
 module PDB
   class Molecule
 
-    attr_reader :atoms, :total, :extrema, :dmax, :centering_coordindates, :sequence
+    attr_reader :atoms, :total, :extrema, :dmax, :centering_coordindates, :sequence, :resids
 
     def initialize()
       @total=0
       @atoms=[]
-      @sequence=[]
+      @sequence={} # use chain ID as key and sequence array as value
+      @resids={} # use chain ID as key and sequence array as value
 
+      # set the dummy extreme atom
       @extrema=Array.new(8)
       temp = "ATOM      1  N   ASP A   1       0.000   0.000   0.000  0.00  0.00           N"
       @extrema[0] = Atom.new(temp)
@@ -42,15 +44,35 @@ module PDB
     end
 
 
+
     def extractSequence
 
       first = @atoms[0].resid
-      @sequence << first
+      @sequence[@atoms[0].chain] =[]
+      @resids[@atoms[0].chain] =[]
+      @sequence[@atoms[0].chain] << @atoms[0].residue
+      @resids[@atoms[0].chain] << first
+      #@sequence << first
       atoms.each do |atom|
-        if first != atom.resid
-          @sequence << atom.resid
+        #if first != atom.resid
+        #  @sequence << atom.resid
+        #  first = atom.resid
+        #end
+        if (@sequence.key?(atom.chain))
+
+          if first != atom.resid
+            @sequence[atom.chain] << atom.residue
+            first = atom.resid
+            @resids[atom.chain] << first
+          end
+        else
+
+          @sequence[atom.chain] =[]
           first = atom.resid
+          @sequence[atom.chain] << atom.residue
+          @resids[atom.chain] << first
         end
+
       end
     end
 
@@ -60,25 +82,41 @@ module PDB
     end
 
 
+
     def removeAtomsByType(atom_type)
-      @atoms.select!{|atom| atom.atomType != atom_type}
+      @atoms.select!{|atom| atom.atom_type != atom_type}
       @total = @atoms.size
     end
 
+    def removeWaters
+      @atoms.select!{|atom| atom.residue != HOH}
+    end
 
-    def selectAtomsByType(atom_types={})
+
+
+
+    def selectAtomsByType(hash_key, selection={})
 
       temp=[]
-      atom_types.each_pair do |key, value|
+
+      selection.each_pair do |type, value|
         if (value)
-          temp = temp + @atoms.select{|atom| atom.atomType == (key.to_s).upcase}
+          temp = temp + @atoms.select{|atom| atom.send(hash_key) == (type.to_s).upcase }
         end
       end
 
       @atoms = temp
-      self.setExtrema
+
+      selection.each_pair do |type, value|
+        if (value == false)
+          @atoms.select!{|atom| atom.send(hash_key) != (type.to_s).upcase }
+        end
+      end
+
+      setExtrema
       @total = atoms.size
     end
+
 
 
     def selectAtomsByChains(chains={})
@@ -91,7 +129,7 @@ module PDB
       end
 
       @atoms = temp
-      self.setExtrema
+      setExtrema
       @total = atoms.size
     end
 
@@ -99,7 +137,7 @@ module PDB
 
     def checkIfExtrema(atom)
 
-      if !atom.atomType.include?("H")
+      if !atom.atom_type.include?("H")
 
         if (atom.xpos > @extrema[0].xpos)
           @extrema[0] = atom
@@ -118,6 +156,8 @@ module PDB
     end
 
 
+
+
     def setExtrema()
       # output extreme values
       # only consider non-hydrgen atoms
@@ -125,6 +165,7 @@ module PDB
         checkIfExtrema(atom)
       end
     end
+
 
 
 
@@ -152,8 +193,9 @@ module PDB
     end
 
 
+
     def center_molecule
-      self.calculateCenteringCoordinates
+      calculateCenteringCoordinates
 
       @atoms.each do |atom|
         atom.xpos = atom.xpos - @centering_coordinates[0]
@@ -162,7 +204,8 @@ module PDB
       end
     end
 
-    def self.calculateCenteringCoordinates
+
+    def calculateCenteringCoordinates
       x=0
       y=0
       z=0
@@ -178,11 +221,10 @@ module PDB
       @centering_coordinates[1] = y*invCount
       @centering_coordinates[2] = z*invCount
     end
-    private_class_method :calculateCenteringCoordinates
+    private :calculateCenteringCoordinates
+
 
   end # end of class definition
-
-
 
 
 end

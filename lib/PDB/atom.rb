@@ -1,7 +1,7 @@
 module PDB
   class Atom
 
-    attr_accessor :atomNumber, :atomType, :residue, :residueType, :resid, :chain, :xpos, :ypos, :zpos, :atom, :occ, :temp, :alt, :mass
+    attr_accessor :atom_number, :atom_type, :residue, :residue_type, :resid, :chain, :xpos, :ypos, :zpos, :atom, :occ, :temp, :alt, :mass
 
     def initialize(line)
 
@@ -9,12 +9,12 @@ module PDB
         raise ("Not a PDB formatted line")
       end
 
-      @atomNumber = line[6,5].to_i
-      @atomType = line[12,4].strip
+      @atom_number = line[6,5].to_i
+      @atom_type = line[12,4].strip
 
       @residue = line[17,3].strip
 
-      @residueType = "" # protein, nucleic acid, etc
+      @residue_type = "" # protein, nucleic acid, etc
 
       @alt = line[16].strip
       @resid = line[22,4].to_i
@@ -43,7 +43,7 @@ module PDB
     end
 
     def self.setResidueType(type)
-      @residueType = type
+      @residue_type = type
     end
 
     # Convert 3-letter residue to 1-letter
