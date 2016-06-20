@@ -2,15 +2,24 @@
 require "PDB/atom"
 
 module PDB
+  #
+  # == Molecule
+  # Molecule Class holds the collection of Atoms that were derived from PDB file
+  # Methods are available for various atom selections
+  #
   class Molecule
 
     attr_reader :atoms, :total, :extrema, :dmax, :centering_coordindates, :sequence, :resids
 
+    # The +new+ class method initializes the class.
+    # === Parameters
+    # * _non required_
+    #
     def initialize()
       @total=0
       @atoms=[]
       @sequence={} # use chain ID as key and sequence array as value
-      @resids={} # use chain ID as key and sequence array as value
+      @resids={}   # use chain ID as key and sequence array as value
 
       # set the dummy extreme atom
       @extrema=Array.new(8)
@@ -43,8 +52,9 @@ module PDB
       end
     end
 
-
-
+    # Extract sequence from input PDB
+    # Sequences are extracted as an array of strings for each chain
+    # Resids are also collected for each chain
     def extractSequence
 
       first = @atoms[0].resid
@@ -82,7 +92,6 @@ module PDB
     end
 
 
-
     def removeAtomsByType(atom_type)
       @atoms.select!{|atom| atom.atom_type != atom_type}
       @total = @atoms.size
@@ -94,7 +103,13 @@ module PDB
 
 
 
-
+    # Select atoms using a hash container
+    #
+    # * *Args*
+    #   - +hash_key+ -> must be an attribute in atom.rb (Atom Class)
+    #   - +selection+ -> hash using symbols of the attribute
+    #
+    # @param hash_key [:symbol]
     def selectAtomsByType(hash_key, selection={})
 
       temp=[]
