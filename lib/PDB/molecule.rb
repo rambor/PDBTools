@@ -5,7 +5,8 @@ module PDB
   #
   # == Molecule
   # Molecule Class holds the collection of Atoms that were derived from PDB file
-  # Methods are available for various atom selections
+  # Extreme values of the coordinates are determined for each atom added or after selection
+  # Methods are available for various atom selections attributes of the Atom class
   #
   class Molecule
 
@@ -97,8 +98,10 @@ module PDB
       @total = @atoms.size
     end
 
+
+
     def removeWaters
-      @atoms.select!{|atom| atom.residue != HOH}
+      @atoms.select!{|atom| atom.residue != "HOH" }
     end
 
 
@@ -134,22 +137,6 @@ module PDB
 
 
 
-    def selectAtomsByChains(chains={})
-
-      temp=[]
-      chains.each_pair do |key, value|
-        if (value)
-          temp = temp + @atoms.select{|atom| atom.chain == (key.to_s).upcase}
-        end
-      end
-
-      @atoms = temp
-      setExtrema
-      @total = atoms.size
-    end
-
-
-
     def checkIfExtrema(atom)
 
       if !atom.atom_type.include?("H")
@@ -172,7 +159,6 @@ module PDB
 
 
 
-
     def setExtrema()
       # output extreme values
       # only consider non-hydrgen atoms
@@ -180,7 +166,6 @@ module PDB
         checkIfExtrema(atom)
       end
     end
-
 
 
 
@@ -209,6 +194,120 @@ module PDB
 
 
 
+    def translate(delx, dely, delz)
+
+      @atoms.each do |atom|
+        atom.xpos = atom.xpos + delx
+        atom.ypos = atom.ypos + dely
+        atom.zpos = atom.zpos + delz
+      end
+    end
+
+
+    # Rotate Molecule by specific angles in radians
+    def rotate(euler_x, euler_y, euler_z)
+      rotate_x(euler_x)
+      rotate_y(euler_y)
+      rotate_z(euler_z)
+    end
+
+
+    # Rotates molecule randomly
+    def random_rotate()
+
+      angle = rand()*twoPI
+      rotate_x(angle)
+
+      angle = rand()*twoPI
+      rotate_y(angle)
+
+      angle = rand()*twoPI
+      rotate_z(angle)
+    end
+
+
+    # rotate along x
+    def rotate_x(angle)
+
+      xrotation = GSL::Matrix.alloc(3,3)
+      cos = Math::cos(angle)
+      sin = Math::sin(angle)
+
+      PDB::report_log("ROTATED X => #{angle}")
+
+      xrotation[0,0] = 1
+      xrotation[1,1] = cos
+      xrotation[1,2] = -1.0*sin
+      xrotation[2,1] = sin
+      xrotation[2,2] = cos
+
+      @atoms.each do |atom|
+        newCoords[0] = atom.xpos
+        newCoords[1] = atom.ypos
+        newCoords[2] = atom.zpos
+        newCoords = xrotation*newCoords
+        atom.xpos = newCoords[0]
+        atom.ypos = newCoords[1]
+        atom.zpos = newCoords[2]
+      end
+
+    end
+
+
+    # rotate along y
+    def rotate_y(angle)
+
+      yrotation = GSL::Matrix.alloc(3,3)
+      cos = Math::cos(angle)
+      sin = Math::sin(angle)
+
+      yrotation[0,0] = cos
+      yrotation[0,2] = sin
+      yrotation[1,1] = 1
+      yrotation[2,0] = -sin
+      yrotation[2,2] = cos
+
+      @atoms.each do |atom|
+        newCoords[0] = atom.xpos
+        newCoords[1] = atom.ypos
+        newCoords[2] = atom.zpos
+        newCoords = yrotation*newCoords
+        atom.xpos = newCoords[0]
+        atom.ypos = newCoords[1]
+        atom.zpos = newCoords[2]
+      end
+
+      PDB::report_log("ROTATED Y => #{angle}")
+    end
+
+
+    # rotate along z
+    def rotate_z(angle)
+
+      zrotation = GSL::Matrix.alloc(3,3)
+      cos = Math::cos(angle)
+      sin = Math::sin(angle)
+
+      zrotation[0,0] = cos
+      zrotation[0,2] = sin
+      zrotation[1,1] = 1
+      zrotation[2,0] = -sin
+      zrotation[2,2] = cos
+
+      @atoms.each do |atom|
+        newCoords[0] = atom.xpos
+        newCoords[1] = atom.ypos
+        newCoords[2] = atom.zpos
+        newCoords = zrotation*newCoords
+        atom.xpos = newCoords[0]
+        atom.ypos = newCoords[1]
+        atom.zpos = newCoords[2]
+      end
+      PDB::report_log("ROTATED Z => #{angle}")
+    end
+
+
+
     def center_molecule
       calculateCenteringCoordinates
 
@@ -218,6 +317,7 @@ module PDB
         atom.zpos = atom.zpos - @centering_coordinates[2]
       end
     end
+
 
 
     def calculateCenteringCoordinates
