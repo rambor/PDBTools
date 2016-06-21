@@ -5,6 +5,8 @@ require "gsl"
 
 module PDB
   # Model contains many molecules derived from PDB File
+  $twoPI = Math::PI*2.0
+
   class Model
 
     attr_reader :filename, :molecule

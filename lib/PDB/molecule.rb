@@ -215,25 +215,23 @@ module PDB
     # Rotates molecule randomly
     def random_rotate()
 
-      angle = rand()*twoPI
+      angle = rand()*$twoPI
       rotate_x(angle)
 
-      angle = rand()*twoPI
+      angle = rand()*$twoPI
       rotate_y(angle)
 
-      angle = rand()*twoPI
+      angle = rand()*$twoPI
       rotate_z(angle)
     end
 
 
     # rotate along x
     def rotate_x(angle)
-
+      newCoords = GSL::Vector.alloc(3)
       xrotation = GSL::Matrix.alloc(3,3)
       cos = Math::cos(angle)
       sin = Math::sin(angle)
-
-      PDB::report_log("ROTATED X => #{angle}")
 
       xrotation[0,0] = 1
       xrotation[1,1] = cos
@@ -250,13 +248,13 @@ module PDB
         atom.ypos = newCoords[1]
         atom.zpos = newCoords[2]
       end
-
+      PDB::report_log("ROTATED X-AXIS => #{angle}")
     end
 
 
     # rotate along y
     def rotate_y(angle)
-
+      newCoords = GSL::Vector.alloc(3)
       yrotation = GSL::Matrix.alloc(3,3)
       cos = Math::cos(angle)
       sin = Math::sin(angle)
@@ -276,14 +274,13 @@ module PDB
         atom.ypos = newCoords[1]
         atom.zpos = newCoords[2]
       end
-
-      PDB::report_log("ROTATED Y => #{angle}")
+      PDB::report_log("ROTATED Y-AXIS => #{angle}")
     end
 
 
     # rotate along z
     def rotate_z(angle)
-
+      newCoords = GSL::Vector.alloc(3)
       zrotation = GSL::Matrix.alloc(3,3)
       cos = Math::cos(angle)
       sin = Math::sin(angle)
@@ -303,7 +300,7 @@ module PDB
         atom.ypos = newCoords[1]
         atom.zpos = newCoords[2]
       end
-      PDB::report_log("ROTATED Z => #{angle}")
+      PDB::report_log("ROTATED Z-AXIS => #{angle}")
     end
 
 
