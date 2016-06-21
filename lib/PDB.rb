@@ -44,6 +44,40 @@ module PDB
 
     end
 
+
+    # Write PDB file from array of PDBAtom objects
+    def writeToFile(filename)
+
+      if filename.split(/\./).last != "pdb"
+        filename = filename + ".pdb"
+      end
+
+      newLines =[]
+      count = 1
+      current_chain = @molecule.atoms[0].chain
+
+      @molecule.atoms.each do |atom|
+
+        # if next chain is different, add ter
+        if (current_chain != atom.chain)
+          newLines << "TER\n"
+          current_chain = atom.chain
+        end
+
+        if atom.residue.size == 1
+          newLines << sprintf("ATOM  %5s %-4s %3s %1s%4s    %8.3f%8.3f%8.3f%6.2f%6.2f          %2s\n", count, atom.atom_type, convert_to_3_letter(atom.residue, atom.atom_type), atom.chain, atom.resid, atom.xpos, atom.ypos, atom.zpos, atom.occ, atom.temp, atom.atom)
+        elsif atom.residue.size == 3
+          newLines << sprintf("ATOM  %5s %-4s %3s %1s%4s    %8.3f%8.3f%8.3f%6.2f%6.2f          %2s\n", count, atom.atom_type, atom.residue, atom.chain, atom.resid, atom.xpos, atom.ypos, atom.zpos, atom.occ, atom.temp, atom.atom)
+        else
+          abort("Improper residue in PDB file -> can't write to file")
+        end
+
+        count+=1
+      end
+
+      newLines << "END\n"
+      open(filename, 'w'){|x| newLines.each {|xx| x << xx}}
+    end
   end
 
 
