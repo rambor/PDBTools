@@ -45,8 +45,19 @@ module PDB
     end
 
 
+    def writeModelToFile(filename)
+      writeToFile(@molecule.atoms, filename)
+    end
+
+
+    def writeExtremaToFile(filename)
+      writeToFile(@molecule.extrema, filename)
+    end
+
+
+
     # Write PDB file from array of PDBAtom objects
-    def writeToFile(filename)
+    def writeToFile(atoms, filename)
 
       if filename.split(/\./).last != "pdb"
         filename = filename + ".pdb"
@@ -54,9 +65,9 @@ module PDB
 
       newLines =[]
       count = 1
-      current_chain = @molecule.atoms[0].chain
+      current_chain = atoms[0].chain
 
-      @molecule.atoms.each do |atom|
+      atoms.each do |atom|
 
         # if next chain is different, add ter
         if (current_chain != atom.chain)
@@ -72,7 +83,7 @@ module PDB
           abort("Improper residue in PDB file -> can't write to file")
         end
 
-        count+=1
+        count += 1
       end
 
       newLines << "END\n"
@@ -92,7 +103,6 @@ module PDB
     #end
   end
   module_function :report_log
-
 
 
   def report_error(error_message)

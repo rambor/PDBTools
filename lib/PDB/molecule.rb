@@ -23,21 +23,10 @@ module PDB
       @resids={}   # use chain ID as key and sequence array as value
 
       # set the dummy extreme atom
-      @extrema=Array.new(8)
-      temp = "ATOM      1  N   ASP A   1       0.000   0.000   0.000  0.00  0.00           N"
-      @extrema[0] = Atom.new(temp)
-      @extrema[0].xpos = -10000 # maxX
-      @extrema[1] = Atom.new(temp)
-      @extrema[1].xpos = 10000  # minX
-      @extrema[2] = Atom.new(temp)
-      @extrema[2].ypos = -10000 # maxY
-      @extrema[3] = Atom.new(temp)
-      @extrema[3].ypos = 10000  # minY
-      @extrema[4] = Atom.new(temp)
-      @extrema[4].zpos = -10000 # maxZ
-      @extrema[5] = Atom.new(temp)
-      @extrema[5].zpos = 10000  # minZ
+      @extrema=Array.new(6)
+      @abcdefgh=Array.new(8)
 
+      reset_extremes
       @centering_coordinates=Array.new(3)
     end
 
@@ -53,6 +42,10 @@ module PDB
       end
     end
 
+
+
+
+
     # Extract sequence from input PDB
     # Sequences are extracted as an array of strings for each chain
     # Resids are also collected for each chain
@@ -63,6 +56,7 @@ module PDB
       @resids[@atoms[0].chain] =[]
       @sequence[@atoms[0].chain] << @atoms[0].residue
       @resids[@atoms[0].chain] << first
+
       #@sequence << first
       atoms.each do |atom|
         #if first != atom.resid
@@ -77,7 +71,6 @@ module PDB
             @resids[atom.chain] << first
           end
         else
-
           @sequence[atom.chain] =[]
           first = atom.resid
           @sequence[atom.chain] << atom.residue
@@ -101,7 +94,6 @@ module PDB
     end
 
 
-
     def removeWaters
       @atoms.select!{|atom| atom.residue != "HOH" }
     end
@@ -110,7 +102,6 @@ module PDB
     def getMass
       @atoms.inject(0){|sum,x| sum + x.mass}
     end
-
 
 
     # Select atoms using a hash container
@@ -145,37 +136,87 @@ module PDB
     end
 
 
+    
+
+
 
     def checkIfExtrema(atom)
 
       if !atom.atom_type.include?("H")
 
-        if (atom.xpos > @extrema[0].xpos)
+        x = atom.xpos
+        y = atom.ypos
+        z = atom.zpos
+
+        if (x > @extrema[0].xpos)
           @extrema[0] = atom
-        elsif (atom.xpos < @extrema[1].xpos)
+        elsif (x < @extrema[1].xpos)
           @extrema[1] = atom
-        elsif (atom.ypos > @extrema[2].ypos)
+        elsif (y > @extrema[2].ypos)
           @extrema[2] = atom
-        elsif (atom.ypos < @extrema[3].ypos)
+        elsif (y < @extrema[3].ypos)
           @extrema[3] = atom
-        elsif (atom.zpos > @extrema[4].zpos)
+        elsif (z > @extrema[4].zpos)
           @extrema[4] = atom
-        elsif (atom.zpos < @extrema[5].zpos)
+        elsif (z < @extrema[5].zpos)
           @extrema[5] = atom
         end
+
+        # maximizes
+        if (x-y+z) > @abcdefgh[0]
+          @extrema[6] = atom
+          @abcdefgh[0] = (x-y+z)
+        end
+
+        if (x-y-z) > @abcdefgh[1]
+          @extrema[7] = atom
+          @abcdefgh[1] = (x-y-z)
+        end
+
+        if (x+y+z) > @abcdefgh[2]
+          @extrema[8] = atom
+          @abcdefgh[2] = (x+y+z)
+        end
+
+        if (x+y-z) > @abcdefgh[3]
+          @extrema[9] = atom
+          @abcdefgh[3] = (x+y-z)
+        end
+
+        # minimizes
+        if (x-y+z) < @abcdefgh[4]
+          @extrema[10] = atom
+          @abcdefgh[4] = (x-y+z)
+        end
+
+        if (x-y-z) < @abcdefgh[5]
+          @extrema[11] = atom
+          @abcdefgh[5] = (x-y-z)
+        end
+
+        if (x+y+z) < @abcdefgh[6]
+          @extrema[12] = atom
+          @abcdefgh[6] = (x+y+z)
+        end
+
+        if (x+y-z) < @abcdefgh[7]
+          @extrema[13] = atom
+          @abcdefgh[7] = (x+y-z)
+        end
+
+
       end
     end
-
 
 
     def setExtrema()
       # output extreme values
       # only consider non-hydrgen atoms
+      reset_extremes
       @atoms.each do |atom|
         checkIfExtrema(atom)
       end
     end
-
 
 
     def setDmax
@@ -200,7 +241,6 @@ module PDB
 
       @dmax = Math::sqrt(max)
     end
-
 
 
     def translate(delx, dely, delz)
@@ -324,6 +364,35 @@ module PDB
       end
     end
 
+
+    def reset_extremes
+
+      temp = "ATOM      1  N   ASP A   1       0.000   0.000   0.000  0.00  0.00           N"
+      @extrema[0] = Atom.new(temp)
+      @extrema[0].xpos = -100000
+      @extrema[1] = Atom.new(temp)
+      @extrema[1].xpos = 100000
+      @extrema[2] = Atom.new(temp)
+      @extrema[2].ypos = -100000
+      @extrema[3] = Atom.new(temp)
+      @extrema[3].ypos = 100000
+      @extrema[4] = Atom.new(temp)
+      @extrema[4].zpos = -100000
+      @extrema[5] = Atom.new(temp)
+      @extrema[5].zpos = 100000
+
+
+      @abcdefgh[0] = -1000000  # 6
+      @abcdefgh[1] = -1000000  # 7
+      @abcdefgh[2] = -1000000  # 8
+      @abcdefgh[3] = -1000000  # 9
+      @abcdefgh[4] = 1000000   # 10
+      @abcdefgh[5] = 1000000   # 11
+      @abcdefgh[6] = 1000000   # 12
+      @abcdefgh[7] = 1000000   # 13
+
+    end
+    private :reset_extremes
 
 
     def calculateCenteringCoordinates
