@@ -3,6 +3,23 @@ module PDB
 
     attr_accessor :atom_number, :atom_type, :residue, :residue_type, :resid, :chain, :xpos, :ypos, :zpos, :atom, :occ, :temp, :alt, :mass
 
+    @@masses = Hash.new
+
+    @@masses["H"] = 1.008
+    @@masses["LI"] = 6.941
+    @@masses["C"] = 12.011
+    @@masses["N"] = 14.007
+    @@masses["O"] = 15.999
+    @@masses["NA"] = 22.990
+    @@masses["SI"] = 28.086
+    @@masses["P"] = 30.974
+    @@masses["S"] = 32.066
+    @@masses["CL"] = 35.453
+    @@masses["K"] = 39.098
+    @@masses["CA"] = 40.078
+    @@masses["SE"] = 78.971
+
+
     def initialize(line)
 
       if !(line =~ /ATOM/)
@@ -27,22 +44,22 @@ module PDB
 
       @atom = line[76,2].strip
 
-      if self.atom == "O1P"
-        self.atom == "OP1"
+      if @atom == "O1P"
+        @atom == "OP1"
       end
 
-      if self.atom == "O2P"
-        self.atom == "OP2"
+      if @atom == "O2P"
+        @atom == "OP2"
       end
 
       @occ = line[54,6].to_f
       @temp = line[60,6].to_f
 
-      self.setMass()
+      setMass()
 
     end
 
-    def self.setResidueType(type)
+    def setResidueType(type)
       @residue_type = type
     end
 
@@ -86,12 +103,32 @@ module PDB
       return res[residue]
     end
 
+
     def setMass()
-      if (self.atom == "")
+      carbon = ["C", "CA", "CB", "CG", "CD", "CE", "CZ", "CG1", "CG2", "CE1", "CD2", "CD1"]
+      nitrogen = ["N", "NE1", "NE2", "NH", "NZ", "ND1"]
+      oxygen = ["O", "OD1", "OD2", "OE1", "OE2"]
 
 
+      if (@atom == "") # not specified, try to infer from atom_type
+
+        if !carbon.find_index(@atom_type).nil?
+          @mass = @@masses["C"]
+          @atom = "C"
+        elsif !nitrogen.find_index(@atom_type).nil?
+          @mass = @@masses["N"]
+          @atom = "N"
+        elsif !oxygen.find_index(@atom_type).nil?
+          @mass = @@masses["O"]
+          @atom = "O"
+        end
+
+      elsif @atom.length > 0
+        @mass = @@masses[@atom]
+      else
+        @mass = 12
       end
-      @mass = 12
+
     end
 
 

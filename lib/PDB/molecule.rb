@@ -88,8 +88,10 @@ module PDB
     end
 
 
+    # @return reference to the atom in the array
+    # does not return a copy
     def getAtomByIndex(index)
-      return @atoms[index]
+      @atoms[index]
     end
 
 
@@ -102,6 +104,11 @@ module PDB
 
     def removeWaters
       @atoms.select!{|atom| atom.residue != "HOH" }
+    end
+
+
+    def getMass
+      @atoms.inject(0){|sum,x| sum + x.mass}
     end
 
 
@@ -123,7 +130,9 @@ module PDB
         end
       end
 
-      @atoms = temp
+      if (temp.size > 0)
+        @atoms = temp
+      end
 
       selection.each_pair do |type, value|
         if (value == false)
