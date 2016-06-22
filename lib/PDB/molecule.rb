@@ -10,7 +10,7 @@ module PDB
   #
   class Molecule
 
-    attr_reader :atoms, :total, :extrema, :dmax, :centering_coordindates, :sequence, :resids
+    attr_reader :atoms, :total, :extrema, :dmax, :centering_coordindates, :sequence, :resids, :random_extrema
 
     # The +new+ class method initializes the class.
     # === Parameters
@@ -136,7 +136,90 @@ module PDB
     end
 
 
-    
+    def select_random_extrema(total_to_select)
+
+      begin
+        if total_to_select < 3 || total_to_select > 12
+          raise "Total number of random points must be > 3 and < 12"
+        end
+      rescue => error
+        PDB::report_error("#{error.class} and #{error.message} : #{total_to_select} ")
+      end
+
+      @extrema.shuffle!
+
+      points=Array.new(total_to_select)
+      points[0] = @extrema[0]
+      # select longest distance
+      prior = 0
+      for i in 1...@extrema.size
+
+        anchor = @extrema[i]
+
+        delx = points[0].xpos - anchor.xpos
+        dely = points[0].ypos - anchor.ypos
+        delz = points[0].zpos - anchor.zpos
+
+        dis2 = delx*delx + dely*dely + delz*delz
+        if dis2 > prior
+          points[1] = @extrema[i]
+          prior = dis2
+        end
+      end
+
+      prior = 0
+      # find the next point that maximizes distance between first two select points
+      for i in 1...@extrema.size
+
+        anchor = @extrema[i]
+
+          delx = points[0].xpos - anchor.xpos
+          dely = points[0].ypos - anchor.ypos
+          delz = points[0].zpos - anchor.zpos
+
+          delx2 = points[1].xpos - anchor.xpos
+          dely2 = points[1].ypos - anchor.ypos
+          delz2 = points[1].zpos - anchor.zpos
+
+          dis2 = Math::sqrt(delx*delx + dely*dely + delz*delz) + Math::sqrt(delx2*delx2 + dely2*dely2 + delz2*delz2)
+
+          if dis2 > prior
+            points[2] = @extrema[i]
+            prior = dis2
+          end
+      end
+
+      # find fourth point
+      vec1 = GSL::Vector[points[0].xpos - points[2].xpos, points[0].ypos - points[2].ypos, points[0].zpos - points[2].zpos]
+      vec2 = GSL::Vector[points[1].xpos - points[2].xpos, points[1].ypos - points[2].ypos, points[1].zpos - points[2].zpos]
+
+      # cross-product
+      a_coeff = vec1[1]*vec2[2] - vec1[2]*vec2[1]
+      b_coeff = vec1[2]*vec2[0] - vec1[0]*vec2[2]
+      c_coeff = vec1[0]*vec2[1] - vec1[1]*vec2[0]
+      d_coeff = a_coeff*points[2].xpos + b_coeff*points[2].ypos + c_coeff*points[2].zpos
+
+      inv_coeff = 1.0/Math::sqrt(a_coeff*a_coeff + b_coeff*b_coeff + c_coeff*c_coeff)
+
+      prior = 0
+      # find the next point that maximizes distance between first two select points
+      for i in 1...@extrema.size
+        anchor = @extrema[i]
+        #if anchor.atom_number != points[0].atom_number && anchor.atom_number != points[1].atom_number && anchor.atom_number != points[2].atom_number
+
+          dis = (anchor.xpos*a_coeff + anchor.ypos*b_coeff + anchor.zpos*c_coeff - d_coeff).abs * inv_coeff
+
+          if (dis > prior)
+            points[3] = @extrema[i]
+            prior = dis
+          end
+        #end
+      end
+
+      # add additional points from random selection
+      @random_extrema = points
+    end
+
 
 
 
@@ -366,7 +449,6 @@ module PDB
 
 
     def reset_extremes
-
       temp = "ATOM      1  N   ASP A   1       0.000   0.000   0.000  0.00  0.00           N"
       @extrema[0] = Atom.new(temp)
       @extrema[0].xpos = -100000

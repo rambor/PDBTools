@@ -50,8 +50,16 @@ module PDB
     end
 
 
+
+
     def writeExtremaToFile(filename)
       writeToFile(@molecule.extrema, filename)
+    end
+
+
+
+    def writeRandomExtremaToFile(filename)
+      writeToFile(@molecule.random_extrema, filename)
     end
 
 
