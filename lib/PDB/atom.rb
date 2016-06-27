@@ -5,20 +5,19 @@ module PDB
 
     @@masses = Hash.new
 
-    @@masses["H"] = 1.008
+    @@masses["H"]  = 1.008
     @@masses["LI"] = 6.941
-    @@masses["C"] = 12.011
-    @@masses["N"] = 14.007
-    @@masses["O"] = 15.999
+    @@masses["C"]  = 12.011
+    @@masses["N"]  = 14.007
+    @@masses["O"]  = 15.999
     @@masses["NA"] = 22.990
     @@masses["SI"] = 28.086
-    @@masses["P"] = 30.974
-    @@masses["S"] = 32.066
+    @@masses["P"]  = 30.974
+    @@masses["S"]  = 32.066
     @@masses["CL"] = 35.453
-    @@masses["K"] = 39.098
+    @@masses["K"]  = 39.098
     @@masses["CA"] = 40.078
     @@masses["SE"] = 78.971
-
 
     def initialize(line)
 
@@ -56,7 +55,6 @@ module PDB
       @temp = line[60,6].to_f
 
       setMass()
-
     end
 
     def setResidueType(type)
