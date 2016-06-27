@@ -1,5 +1,7 @@
 
 require "PDB/atom"
+require "PDB/residue"
+require 'linked-list'
 
 module PDB
   #
@@ -10,7 +12,7 @@ module PDB
   #
   class Molecule
 
-    attr_reader :atoms, :total, :extrema, :dmax, :centering_coordindates, :sequence, :resids, :random_extrema
+    attr_reader :atoms, :total, :extrema, :dmax, :centering_coordindates, :sequence, :resids, :random_extrema, :residues
 
     # The +new+ class method initializes the class.
     # === Parameters
@@ -22,6 +24,7 @@ module PDB
       @sequence={} # use chain ID as key and sequence array as value
       @resids={}   # use chain ID as key and sequence array as value
 
+      @residues = LinkedList::List.new
       # set the dummy extreme atom
       @extrema=Array.new(6)
       @abcdefgh=Array.new(8)
@@ -31,12 +34,29 @@ module PDB
     end
 
 
+
     def addAtom(atom)
       # handle exception
       begin
         @atoms << atom
         checkIfExtrema(@atoms.last)
         @total += 1
+
+        # get resid
+        # if resid is not found, make new resid
+        # molecule is managed as a collection of residues
+        if !@residues.last.nil? && @residues.last.resid == atom.resid
+          @residues.last.add_atom(atom)
+        else
+          current_residue = checkForResid(atom.resid)
+          if current_residue.nil?
+            @residues.push(Residue.new(atom))
+          else
+            current_residue.add_atom(atom)
+          end
+        end
+
+
       rescue => error
         PDB::report_error("#{error.class} and #{error.message} : #{atom.inspect} ")
       end
@@ -44,6 +64,19 @@ module PDB
 
 
 
+    def checkForResid(resid)
+      if @residues.size == 0
+        return nil
+      else
+        @residues.each do |residue|
+          if residue.resid == resid
+            return residue
+          end
+        end
+
+        return nil
+      end
+    end
 
 
     # Extract sequence from input PDB
@@ -133,6 +166,34 @@ module PDB
 
       setExtrema
       @total = atoms.size
+    end
+
+
+
+    # Select atoms using a hash container
+    #
+    # * *Args*
+    #   - +hash_key+ -> must be an attribute in atom.rb (Atom Class)
+    #   - +selection+ -> hash using symbols of the attribute
+    #
+    # @param hash_key [:symbol]
+    # Example : selectAtomsBy(:atom_type, :CA)
+    #
+
+    def selectAtomsBy(attribute, type)
+
+      temp=[]
+
+      @residues.each do |res|
+        res.atoms.each do |atom|
+          if atom.send(attribute) == (type.to_s).upcase
+            temp << atom.dup
+          end
+        end
+      end
+
+      #setExtrema
+      temp
     end
 
 
@@ -286,7 +347,6 @@ module PDB
           @extrema[13] = atom
           @abcdefgh[7] = (x+y-z)
         end
-
 
       end
     end
@@ -494,7 +554,6 @@ module PDB
       @centering_coordinates[2] = z*invCount
     end
     private :calculateCenteringCoordinates
-
 
   end # end of class definition
 

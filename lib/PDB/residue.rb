@@ -2,24 +2,22 @@ module PDB
 
   class Residue
 
-    attr_accessor :atoms, :resid, :chain, :resname
+    attr_accessor :atoms, :resid, :resname, :chain
 
-    def initialize(resname, resid, chain)
+    def initialize(atom)
       @atoms=[]
-      @resid = resid
-      @chain = chain
-      @resname = resname
-    end
-
-    # store reference to the atom
-    def add_atom(atom)
       @atoms << atom
+      @resid = atom.resid
+      @chain = atom.chain
+      @resname = atom.residue
     end
 
 
-    def convert_to_single
+    def add_atom(atom)
+      raise ArgumentError, 'CHAIN does not match' unless atom.chain == @chain
+      raise ArgumentError, 'RESID does not match' unless atom.resid == @resid
 
-
+      @atoms << atom
     end
 
   end
