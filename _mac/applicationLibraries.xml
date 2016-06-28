@@ -114,6 +114,14 @@
         <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2@global/gems/gsl-2.1.0.1/rdoc" />
       </SOURCES>
     </library>
+    <library name="linked-list (v0.0.9, RVM: ruby-2.1.2) [gem]">
+      <CLASSES>
+        <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2/gems/linked-list-0.0.9/lib" />
+      </CLASSES>
+      <SOURCES>
+        <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2/gems/linked-list-0.0.9/lib" />
+      </SOURCES>
+    </library>
     <library name="PDB (v0.0.1, RVM: ruby-2.1.2) [gem]">
       <CLASSES>
         <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2/gems/PDB-0.0.1/lib" />
