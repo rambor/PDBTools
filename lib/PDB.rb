@@ -31,11 +31,11 @@ module PDB
     end
 
 
-
     # Open PDB file and create Molecule
     def openPDBFile(filename, flags={})
 
       puts "OPENING #{filename}"
+      PDB::report_log("OPENING #{filename}")
       pdbLines=[]
 
       open(filename){|x| pdbLines = x.readlines}
@@ -95,7 +95,7 @@ module PDB
     #
     # To select as a compound AND statement, use an array of hashes, each element of array is a hash
     #
-    # selectAtomsByAttribute([{:atom_type => {:CB => true}, :residue => {:ASP => true}},{:residue => {:HOH => true}}])
+    # usage : selectAtomsByAttribute([{:atom_type => {:CB => true}, :residue => {:ASP => true}},{:residue => {:HOH => true}}])
     #
     def selectAtomsByAttribute(selection=[])
 
@@ -141,7 +141,6 @@ module PDB
     end
 
 
-
     def select_from_active_set_false(array_of_atoms, selection_hash)
       #
       # attribute == :atom_type, :chain, etc
@@ -183,7 +182,7 @@ module PDB
         @molecules.each_value do |mol|
           type = type_symbol.to_sym
           if value
-            PDB::report_log("SELECTOR : ACCEPTING #{attribute} => #{type}")
+            PDB::report_log("SELECTOR : ACCEPTING #{attribute} => #{type} : CHAIN => #{mol.chain}")
             temp.concat( mol.selectAtomsBy(attribute, type) )
           end
         end
@@ -369,6 +368,8 @@ module PDB
         filename = filename + ".pdb"
       end
 
+      filename.tr!(" ", "_")
+
       newLines =[]
       count = 1
       current_chain = atoms[0].chain
@@ -420,7 +421,7 @@ module PDB
 
     # Rotates molecule randomly
     def random_rotate()
-
+      PDB::report_log("RANDOM ROTATION")
       angle = rand()*$twoPI
       rotate_x(angle)
 
@@ -429,7 +430,7 @@ module PDB
 
       angle = rand()*$twoPI
       rotate_z(angle)
-      PDB::report_log("Random Rotation")
+      PDB::report_log("RANDOM ROTATION ENDED")
     end
 
 
@@ -675,12 +676,54 @@ module PDB
 
 
   #
-  # PDB Module methods defined below
+  # == PDB Module methods defined below
   #
 
+  # Extract sequence of residues from array of atoms.
+  # Order of the sequence is set by the order of the atoms in the array.
+  #
+  # ==== Attributes
+  #
+  # * +atoms+ - Array of Atoms
+  #
+  def extract_sequence(atoms)
+
+    sequence={}
+    first = atoms[0].resid
+    sequence[atoms[0].chain] =[]
+    sequence[atoms[0].chain] << atoms[0].residue
+
+    atoms.each do |atom|
+      #if first != atom.resid
+      #  @sequence << atom.resid
+      #  first = atom.resid
+      #end
+      if (sequence.key?(atom.chain))
+
+        if first != atom.resid
+          sequence[atom.chain] << atom.residue
+          first = atom.resid
+        end
+      else
+        sequence[atom.chain] =[]
+        first = atom.resid
+        sequence[atom.chain] << atom.residue
+      end
+    end
+  end
+  module_function :extract_sequence
+
+
   # Convert 3-letter residue to 1-letter
-  # input is a string
+  # search a hash for the 3 letter input string
+  #
+  # ==== Attributes
+  #
+  # * +residue+ - 3 letter string
+  #
+  # @param residue string
   def convert_to_one_letter(residue)
+
     res = {
         :GUA => "G",
         :ADE => "A",
@@ -717,32 +760,30 @@ module PDB
         :PCA => "J"
     }
 
+    residue = residue.upcase.to_sym
     return res[residue]
   end
   module_function :convert_to_one_letter
 
 
   def report_log(message)
-    (Thread.current[:messages] ||= []) << "#{message}"
-    puts message
+    (Thread.current[:messages] ||= []) << "#{Time.now}\t#{message}"
 
     File.open('PDBTools.log', 'a') do |file|
-      (Thread.current[:messages] ||= []).each do |msg|
-        file.puts msg
-      end
+      file.puts "#{Time.now}  #{message}"
     end
   end
   module_function :report_log
 
 
   def report_error(error_message)
-    (Thread.current[:errors] ||= []) << "#{error_message}"
-    puts error_message
+    (Thread.current[:errors] ||= []) << "#{Time.now}\t#{error_message}"
 
-    File.open('PDB_errors.txt', 'a') do |file|
-      (Thread.current[:errors] ||= []).each do |error|
-        file.puts error
-      end
+    File.open('PDBTools_errors.txt', 'a') do |file|
+      file.puts  "#{Time.now}  #{error_message}"
+     # (Thread.current[:errors] ||= []).each do |error|
+     #   file.puts error
+     # end
     end
   end
   module_function :report_error
