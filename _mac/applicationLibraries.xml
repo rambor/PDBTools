@@ -86,12 +86,14 @@
     </library>
     <library name="gsl (v2.1.0.1, RVM: ruby-2.1.2 [global]) [gem]">
       <CLASSES>
+        <root url="file://$APPLICATION_CONFIG_DIR$/rubystubs/ruby18/gsl/2.1.0.1" />
         <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2@global/gems/gsl-2.1.0.1/ext" />
         <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2@global/gems/gsl-2.1.0.1/lib" />
         <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2@global/gems/gsl-2.1.0.1/tmp" />
         <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2@global/gems/gsl-2.1.0.1/rdoc" />
       </CLASSES>
       <SOURCES>
+        <root url="file://$APPLICATION_CONFIG_DIR$/rubystubs/ruby18/gsl/2.1.0.1" />
         <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2@global/gems/gsl-2.1.0.1/ext" />
         <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2@global/gems/gsl-2.1.0.1/lib" />
         <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2@global/gems/gsl-2.1.0.1/tmp" />
