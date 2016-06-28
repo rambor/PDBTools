@@ -137,7 +137,7 @@ module PDB
         select_from_active_set_false(@active_set, selection)
       end
 
-      setExtrema
+      set_extrema
     end
 
 
@@ -236,7 +236,7 @@ module PDB
         end
       end
       # reset extreme values
-      setExtrema
+      set_extrema
     end
 
 
@@ -322,6 +322,7 @@ module PDB
     def set_dmax
       max = 0
       total = @active_set.size
+      PDB::report_log("DETERMINING DMAX : PLEASE WAIT")
       for i in 0...total
         atom1 = @active_set[i]
         nextAtom = i + 1
@@ -772,7 +773,7 @@ module PDB
     (Thread.current[:messages] ||= []) << "#{Time.now}\t#{message}"
 
     File.open('PDBTools.log', 'a') do |file|
-      file.puts "#{Time.now}  #{message}"
+      file.puts "#{Time.now.strftime("%d-%m-%Y %H:%M")}  #{message}"
     end
   end
   module_function :report_log
@@ -782,7 +783,7 @@ module PDB
     (Thread.current[:errors] ||= []) << "#{Time.now}\t#{error_message}"
 
     File.open('PDBTools_errors.txt', 'a') do |file|
-      file.puts  "#{Time.now}  #{error_message}"
+      file.puts  "#{Time.now.strftime("%d-%m-%Y %H:%M")}  #{error_message}"
      # (Thread.current[:errors] ||= []).each do |error|
      #   file.puts error
      # end
