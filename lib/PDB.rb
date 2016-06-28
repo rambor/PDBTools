@@ -429,6 +429,7 @@ module PDB
 
       angle = rand()*$twoPI
       rotate_z(angle)
+      PDB::report_log("Random Rotation")
     end
 
 
@@ -725,11 +726,11 @@ module PDB
     (Thread.current[:messages] ||= []) << "#{message}"
     puts message
 
-    #File.open('PDB_errors.txt', 'a') do |file|
-    #  (Thread.current[:messages] ||= []).each do |error|
-    #    file.puts error
-    #  end
-    #end
+    File.open('PDBTools.log', 'a') do |file|
+      (Thread.current[:messages] ||= []).each do |msg|
+        file.puts msg
+      end
+    end
   end
   module_function :report_log
 
