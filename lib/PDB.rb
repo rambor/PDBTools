@@ -309,7 +309,7 @@ module PDB
     end
 
 
-    def setExtrema()
+    def set_extrema
       # output extreme values
       # only consider non-hydrgen atoms
       reset_extremes
@@ -319,12 +319,13 @@ module PDB
     end
 
 
-    def setDmax
+    def set_dmax
       max = 0
-      for i in 0...@total
+      total = @active_set.size
+      for i in 0...total
         atom1 = @active_set[i]
         nextAtom = i + 1
-        for j in nextAtom...@total
+        for j in nextAtom...total
           atom2 = @active_set[j]
           dx = atom1.xpos - atom2.xpos
           dy = atom1.ypos - atom2.ypos
@@ -658,7 +659,8 @@ module PDB
       x=0
       y=0
       z=0
-      invCount = 1.0/@total
+      total = @active_set.size
+      invCount = 1.0/total
 
       @active_set.each do |atom|
         x += atom.xpos
