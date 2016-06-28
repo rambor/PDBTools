@@ -522,6 +522,11 @@ module PDB
     end
 
 
+    #
+    # select random extrema points
+    # first three points maximize area of a triangle
+    # fourth point maximizes distance from a point ot the triangular plane
+    # additional points are taken at random
     def select_random_extrema(total_to_select)
 
       begin
@@ -535,7 +540,7 @@ module PDB
       @extrema.shuffle!
 
       points=Array.new(total_to_select)
-      points[0] = @extrema[0]
+      points[0] = @extrema[0].dup
       # select longest distance
       prior = 0
       for i in 1...@extrema.size
@@ -548,7 +553,7 @@ module PDB
 
         dis2 = delx*delx + dely*dely + delz*delz
         if dis2 > prior
-          points[1] = @extrema[i]
+          points[1] = @extrema[i].dup
           prior = dis2
         end
       end
@@ -570,7 +575,7 @@ module PDB
         dis2 = Math::sqrt(delx*delx + dely*dely + delz*delz) + Math::sqrt(delx2*delx2 + dely2*dely2 + delz2*delz2)
 
         if dis2 > prior
-          points[2] = @extrema[i]
+          points[2] = @extrema[i].dup
           prior = dis2
         end
       end
@@ -579,7 +584,7 @@ module PDB
       vec1 = GSL::Vector[points[0].xpos - points[2].xpos, points[0].ypos - points[2].ypos, points[0].zpos - points[2].zpos]
       vec2 = GSL::Vector[points[1].xpos - points[2].xpos, points[1].ypos - points[2].ypos, points[1].zpos - points[2].zpos]
 
-      # cross-product
+      # cross-product - get parameters for a plane
       a_coeff = vec1[1]*vec2[2] - vec1[2]*vec2[1]
       b_coeff = vec1[2]*vec2[0] - vec1[0]*vec2[2]
       c_coeff = vec1[0]*vec2[1] - vec1[1]*vec2[0]
@@ -590,36 +595,47 @@ module PDB
       prior = 0
       # find the next point that maximizes distance between first two select points
       for i in 1...@extrema.size
-        anchor = @extrema[i]
-        #if anchor.atom_number != points[0].atom_number && anchor.atom_number != points[1].atom_number && anchor.atom_number != points[2].atom_number
 
+        anchor = @extrema[i]
         dis = (anchor.xpos*a_coeff + anchor.ypos*b_coeff + anchor.zpos*c_coeff - d_coeff).abs * inv_coeff
 
         if (dis > prior)
-          points[3] = @extrema[i]
+          points[3] = @extrema[i].dup
           prior = dis
         end
         #end
       end
 
       # add additional points from random selection
+      if total_to_select > 4
+        for i in 4...total_to_select
+            for j in 0...14
+              temp = points.select{|p| p.xpos == @extrema[j].xpos}
+              if temp.size == 0
+                @points[i] = @extrema[j].dup
+                break
+              end
+            end
+        end
+      end
+
       @random_extrema = points
     end
 
 
     def reset_extremes
       temp = "ATOM      1  N   ASP A   1       0.000   0.000   0.000  0.00  0.00           N"
-      @extrema[0] = Atom.new(temp)
+      @extrema[0] = Atom.new(temp) # holds max X
       @extrema[0].xpos = -100000
-      @extrema[1] = Atom.new(temp)
+      @extrema[1] = Atom.new(temp) # holds min X
       @extrema[1].xpos = 100000
-      @extrema[2] = Atom.new(temp)
+      @extrema[2] = Atom.new(temp) # holds max Y
       @extrema[2].ypos = -100000
-      @extrema[3] = Atom.new(temp)
+      @extrema[3] = Atom.new(temp) # holds min Y
       @extrema[3].ypos = 100000
-      @extrema[4] = Atom.new(temp)
+      @extrema[4] = Atom.new(temp) # holds max Z
       @extrema[4].zpos = -100000
-      @extrema[5] = Atom.new(temp)
+      @extrema[5] = Atom.new(temp) # holds min Z
       @extrema[5].zpos = 100000
 
 
@@ -654,9 +670,12 @@ module PDB
     end
     private :calculateCenteringCoordinates
 
+  end # end of Model Class
 
-  end
 
+  #
+  # PDB Module methods defined below
+  #
 
   # Convert 3-letter residue to 1-letter
   # input is a string
@@ -702,7 +721,6 @@ module PDB
   module_function :convert_to_one_letter
 
 
-
   def report_log(message)
     (Thread.current[:messages] ||= []) << "#{message}"
     puts message
@@ -727,7 +745,6 @@ module PDB
     end
   end
   module_function :report_error
-
 
 end
 
