@@ -43,12 +43,14 @@ module PDB
 
       @atom = line[76,2].strip
 
-      if @atom == "O1P"
-        @atom == "OP1"
+      if @atom_type == "O1P"
+        @atom_type == "OP1"
+        @atom = "P"
       end
 
-      if @atom == "O2P"
-        @atom == "OP2"
+      if @atom_type == "O2P"
+        @atom_type == "OP2"
+        @atom = "P"
       end
 
       @occ = line[54,6].to_f
@@ -119,6 +121,9 @@ module PDB
         elsif !oxygen.find_index(@atom_type).nil?
           @mass = @@masses["O"]
           @atom = "O"
+        elsif @atom_type =~ /^H/
+          @mass = @@masses["H"]
+          @atom = "H"
         end
 
       elsif @atom.length > 0

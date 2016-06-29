@@ -17,6 +17,7 @@ module PDB
     #
     attr_reader :filename, :molecule, :active_set, :molecules, :dmax, :extrema, :centering_coordinates, :random_extrema
 
+
     def initialize(file, options={})
       @filename = file
       @active_set =[]
