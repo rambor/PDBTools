@@ -136,14 +136,12 @@
         <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2/gems/linked-list-0.0.9/lib" />
       </SOURCES>
     </library>
-    <library name="PDB (v0.0.1, RVM: ruby-2.1.2) [gem]">
+    <library name="PDB (v0.1.1, RVM: ruby-2.1.2) [gem]">
       <CLASSES>
-        <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2/gems/PDB-0.0.1/lib" />
-        <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2/gems/PDB-0.0.1/.idea" />
+        <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2/gems/PDB-0.1.1/lib" />
       </CLASSES>
       <SOURCES>
-        <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2/gems/PDB-0.0.1/lib" />
-        <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2/gems/PDB-0.0.1/.idea" />
+        <root url="file://$USER_HOME$/.rvm/gems/ruby-2.1.2/gems/PDB-0.1.1/lib" />
       </SOURCES>
     </library>
     <library name="rubygems-bundler (v1.4.4, RVM: ruby-2.1.2 [global]) [gem]">
