@@ -2,6 +2,7 @@
 require "PDB/atom"
 require "PDB/residue"
 require 'linked-list'
+require 'PDB/fasta'
 
 module PDB
   #
@@ -12,7 +13,8 @@ module PDB
   #
   class Molecule
 
-    attr_reader :mass, :total, :extrema, :dmax, :centering_coordindates, :sequence, :resids, :random_extrema, :residues, :chain
+
+    attr_reader :index_of_last_residue_added, :chain_breaks, :mass, :total, :extrema, :dmax, :centering_coordindates, :sequence, :resids, :random_extrema, :residues, :chain
 
     # The +new+ class method initializes the class.
     # === Parameters
@@ -23,6 +25,7 @@ module PDB
       @mass=0
       @sequence=[] # use chain ID as key and sequence array as value
       @resids=[]   # use chain ID as key and sequence array as value
+      @chain_breaks=[]
 
       @residues = LinkedList::List.new
       # set the dummy extreme atom
@@ -31,6 +34,7 @@ module PDB
 
       reset_extremes
       @centering_coordinates=Array.new(3)
+
     end
 
 
@@ -55,6 +59,7 @@ module PDB
             current_residue.add_atom(atom)
           end
         end
+
 
         checkIfExtrema(atom)
         @total += 1
@@ -90,19 +95,32 @@ module PDB
     end
 
 
-    # Extract sequence from input PDB
+    # Extract sequence from input PDB after loading atoms, can't be used in initializer
     # Sequences are extracted as an array of strings for each chain
     # Resids are also collected for each chain
     def extractSequence
 
+
+      @index_of_last_residue_added = @residues.first.resid;
       #@sequence << first
       @residues.each do |res|
         @sequence << res.resname
         @resids << res.resid
-      end
+
+        # detect discontinuities in chain
+        if ( (res.resid - @index_of_last_residue_added) > 1)
+          @chain_breaks << @index_of_last_residue_added
+        end
+
+        @index_of_last_residue_added = res.resid
+
+        end
     end
 
 
+    def getTotalChainBreaks
+      return @chain_breaks.size
+    end
 
 
     def getMass
@@ -112,8 +130,19 @@ module PDB
           @mass += atom.mass
         end
       end
+      @mass
     end
 
+    # read in a fasta file and compare sequence to sequence
+    # PDB could be more or less than input FASTA
+    def compareToFasta(filename)
+
+        fasta = Fasta.new(filename)
+
+      # residues may not start in same place
+      # can FASTA sequence be smaller than PDB sequence?
+
+    end
 
 
     # Select atoms using a hash container
