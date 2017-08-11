@@ -1,7 +1,7 @@
 # PDB
 
-Library for reading in a PDB (Protein DataBank File) and manipulating coordinates
-An ATOM line from the PDB file is used to create an instance of the Atom Class
+Library for reading in a PDB (Protein DataBank File) and manipulating coordinates.
+An ATOM line from the PDB file is used to create an instance of the Atom Class.
 Some attribute mappings are described below:
 
       :atom_number => line[6,5]

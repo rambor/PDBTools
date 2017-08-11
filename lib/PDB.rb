@@ -1,5 +1,6 @@
 require "PDB/version"
 require "PDB/atom"
+require "PDB/bead"
 require "PDB/molecule"
 require "gsl"
 
@@ -15,7 +16,7 @@ module PDB
     #
     # :molecule => holds a hash, key is chain and value is Molecule class
     #
-    attr_reader :filename, :molecule, :active_set, :molecules, :dmax, :extrema, :centering_coordinates, :random_extrema
+    attr_reader :filename, :active_set, :molecules, :dmax, :extrema, :centering_coordinates, :random_extrema
 
 
     def initialize(file, options={})
@@ -63,6 +64,11 @@ module PDB
         else
           @molecules[current_chain.to_sym].addAtom(atom)
         end
+      end
+
+      @molecules.each_pair do |k,v|
+        v.extractSequence
+        v.getMass
       end
 
 
@@ -657,6 +663,7 @@ module PDB
     private :reset_extremes
 
 
+
     def calculateCenteringCoordinates
       x=0
       y=0
@@ -716,6 +723,54 @@ module PDB
     end
   end
   module_function :extract_sequence
+
+
+  def convert_to_bead_model(dmax, bead_radius, atoms)
+    # atoms should be centered
+
+    radius = dmax*0.5
+    limit = radius + radius*0.23
+    inv_bead_radius = 1.0/bead_radius
+    #create HCP lattice
+    klimit = (limit*inv_bead_radius*3.0/2.0*invsqrt6)
+    count=0
+    inv3 = 1.0/3
+    sqrt6 = Math.sqrt(6)
+    beads=[]
+
+    count=1
+    for k in -klimit..klimit
+      dz = 2.0*inv3*sqrt6*k
+
+      if (dz*bead_radius > limit)
+        break
+      end
+
+      inv3kmod2 = inv3*k.modulo(2)
+
+      for j in -klimit..klimit
+        dy = sqrt3*(j + inv3kmod2)
+
+        if (dy*bead_radius <= limit)
+          jkmod2 = (j+k).modulo(2)
+
+          for i in -klimit..klimit
+            dx = 2*i + jkmod2
+            distance = bead_radius*Math.sqrt(dx*dx + dy*dy + dz*dz)
+            if (distance <= limit)
+              beads << PDB::Bead.new(bead_radius, dx*bead_radius, dy*bead_radius, dz*bead_radius, count)
+              count+=1
+            end
+
+          end # end of i loop
+        end
+      end # end of j loop
+    end # end of k loop
+
+
+
+  end
+  module_function :convert_to_bead_model
 
 
   # Convert 3-letter residue to 1-letter
