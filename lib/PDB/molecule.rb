@@ -16,6 +16,37 @@ module PDB
 
     attr_reader :index_of_last_residue_added, :chain_breaks, :mass, :total, :extrema, :dmax, :centering_coordindates, :sequence, :resids, :random_extrema, :residues, :chain
 
+    @@nucleic = Hash.new
+    @@nucleic["G"]  = "GUA"
+    @@nucleic["A"]  = "ADE"
+    @@nucleic["T"]  = "THY"
+    @@nucleic["U"]  = "URI"
+    @@nucleic["C"]  = "CYT"
+
+    @@protein = Hash.new
+    @@protein["A"] = "ALA"
+    @@protein["R"] = "ARG"
+    @@protein["N"] = "ASN"
+    @@protein["D"] = "ASP"
+    @@protein["C"] = "CYS"
+    @@protein["E"] = "GLU"
+    @@protein["Q"] = "GLN"
+    @@protein["G"] = "GLY"
+    @@protein["H"] = "HIS"
+    @@protein["I"] = "ILE"
+    @@protein["L"] = "LEU"
+    @@protein["K"] = "LYS"
+    @@protein["M"] = "MET"
+    @@protein["F"] = "PHE"
+    @@protein["P"] = "PRO"
+    @@protein["S"] = "SER"
+    @@protein["T"] = "THR"
+    @@protein["W"] = "TRP"
+    @@protein["Y"] = "TYR"
+    @@protein["V"] = "VAL"
+    @@protein["U"] = "SEC"
+    @@protein["J"] = "PCA"
+
     # The +new+ class method initializes the class.
     # === Parameters
     # * _non required_
@@ -169,6 +200,67 @@ module PDB
 
       #setExtrema
       temp
+    end
+
+
+    def writeSequenceToCNSFormat (filename, type)
+
+      type ||= "protein"
+      totalInSequence = @sequence.size
+
+
+      count = 1
+      text = ""
+      for i in 0...totalInSequence
+
+        res = @sequence[i]
+        if (res.size == 1)
+          res = convertTo3Letter(res, type)
+        end
+
+        text += "#{res} "
+        if (count % 10 == 0)
+          text += "\n"
+        end
+
+        count+=1
+      end
+      text += "\n"
+
+      open("#{filename}.cns",'w'){|f|  f << text }
+
+    end
+
+
+    # Convert 3-letter residue to 1-letter
+    # input is a string
+    def convertTo3Letter(residue, type)
+
+      begin
+
+        if (type == "protein")
+
+          if @@protein.has_key? (residue)
+            returnMe = @@protein[residue]
+          else
+            raise "residue not found in protein sequence"
+          end
+
+        elsif (type == "nucleic")
+
+          if @@nucleic.has_key? (residue)
+            returnMe = @@nucleic[residue]
+          else
+            raise "residue not found in nucleic sequence"
+          end
+
+        end
+
+      rescue => error
+        PDB::report_error("#{error.class} and #{error.message} : #{residue} ")
+      end
+
+      returnMe
     end
 
 

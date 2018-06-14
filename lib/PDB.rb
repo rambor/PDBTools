@@ -87,8 +87,8 @@ module PDB
 
 
     # Select Atoms by Attribute making a copy of the atom, only selects as AND statements (or intersections)
-    #
     # :atom_type => {:CA => true}
+    #
     # usage : selectAtomsByAttributes( :atom_type => {:CA => true, :CB => true})
     # usage : selectAtomsByAttributes({:atom_type => {:CA => true, :CB => true}, :chain => {:A => true}})
     # usage : selectAtomsByAttributes({:atom_type => {:CA => true, :CB => true}, :chain => {:B => false}})
