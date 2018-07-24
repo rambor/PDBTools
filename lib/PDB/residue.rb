@@ -16,7 +16,6 @@ module PDB
     def add_atom(atom)
       raise ArgumentError, 'CHAIN does not match' unless atom.chain == @chain
       raise ArgumentError, 'RESID does not match' unless atom.resid == @resid
-
       @atoms << atom
     end
 
