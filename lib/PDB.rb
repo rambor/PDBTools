@@ -13,7 +13,8 @@ module PDB
   $letters = %{A B C D E F G H I J K L M N O P Q R S T U V W X Y Z}
 
   AMINOACIDS = %w{ALA VAL ILE LEU MET PHE TYR TRP ARG HIS LYS ASP GLU SER THR ASN GLN CYS GLY PRO PCA}
-
+  NUCLEICACIDS = %w{ADE GUA URI CYT THY XAN HYP ORO}
+  
   class Model
 
     # active_set array of atoms that are in use
