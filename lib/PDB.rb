@@ -4,11 +4,15 @@ require "PDB/bead"
 require "PDB/molecule"
 require "gsl"
 
+SSObject = Struct.new(:type, :start, :end, :chain, :ss_subclass)
+
 module PDB
   # Model contains many molecules derived from PDB File
   # define global variables
   $twoPI = Math::PI*2.0
   $letters = %{A B C D E F G H I J K L M N O P Q R S T U V W X Y Z}
+
+  AMINOACIDS = %w{ALA VAL ILE LEU MET PHE TYR TRP ARG HIS LYS ASP GLU SER THR ASN GLN CYS GLY PRO PCA}
 
   class Model
 
@@ -21,9 +25,9 @@ module PDB
 
     def initialize(file, options={})
       @filename = file
-      @active_set =[]
+      @active_set =[] # set of atoms that are in use
       @molecules = Hash.new # use chain as molecule key for the hash
-      raise ArgumentError.new("File does not exists in directory #{file}") unless File.exists?(file)
+      raise ArgumentError.new("File does not exists in directory #{file}") unless File.exist?(file)
       @extrema=Array.new(14)
       @abcdefgh=Array.new(8)
       @centering_coordinates=Array.new(3)
@@ -42,11 +46,16 @@ module PDB
 
       open(filename){|x| pdbLines = x.readlines}
 
-      pdbLines.select!{ |x| x =~ /^ATOM/}
-      pdbLines.collect!{|x| PDB::Atom.new(x) }
+      # assign secondary structure to each residue
+      ssLines = getSS(pdbLines) # returns array of SSOBject
+
+
+      pdbLines.select!{ |x| x =~ /^ATOM/} #
+      pdbLines.collect!{|x| PDB::Atom.new(x) } # includes atoms that are in alternate locations
 
       # group atoms by chains organized by collection of residues
       current_chain = pdbLines[0].chain
+
       @molecules[current_chain.to_sym] = PDB::Molecule.new
 
       pdbLines.each do |atom|
@@ -54,6 +63,7 @@ module PDB
         if (atom.chain != current_chain)
           current_chain = atom.chain
           @molecules[current_chain.to_sym] = PDB::Molecule.new
+          puts "chain #{current_chain}"
         end
 
         # strip out waters
@@ -62,9 +72,43 @@ module PDB
           atom.chain = "HOH" # set chain to WAT
           @molecules[:HOH].addAtom(atom)
         else
-          @molecules[current_chain.to_sym].addAtom(atom)
+          # don't include ACE capping modification as a residue
+          if (atom.residue != 'ACE' && atom.resid > 0)
+            @molecules[current_chain.to_sym].addAtom(atom)
+          end
+
+        end
+      end # end pdbLines loop
+
+
+      # assign secondary structure based on PDB assignment
+      # default should be OTHER
+      @molecules.each_value do |val|
+        val.residues.each do |residue|
+          # if resid of residue is within range of ss
+          residue.setSecondaryStructure("OTHER", 0)
+          residue.validate
         end
       end
+
+      # iterate through residues in chain and assign SS
+      ssLines.each do |assignment|
+        startIndex = assignment.start
+        endIndex = assignment.end
+        ch = assignment.chain
+        ssType = assignment.type
+        # puts "ASSIGNMENT #{ch} #{startIndex} #{endIndex}"
+        residues =  @molecules.has_key?(ch.to_sym) ? @molecules[ch.to_sym].residues : Array.new
+        residues.each do |resi|
+          if (resi.resid == startIndex && startIndex <= endIndex)
+            resi.setSecondaryStructure(ssType, assignment.ss_subclass)
+            startIndex+=1
+          elsif (startIndex > endIndex)
+            break
+          end
+        end
+      end # end ssLines
+
 
       @molecules.each_pair do |k,v|
         v.extractSequence
@@ -243,6 +287,7 @@ module PDB
         end
       end
       # reset extreme values
+      puts "Total atoms in use: #{@active_set.size}"
       set_extrema
     end
 
@@ -664,6 +709,59 @@ module PDB
 
 
 
+    def getSS(list)
+      lines = list.select{|x| x =~ /^HELIX|SHEET|TURN/}
+      output=[]
+      lines.each do |line|
+        ele = line.split(/[\s\t]+/)
+        type = line[38..39].to_i
+
+        if ele[0] == "HELIX"
+          startResidue = line[21..24].to_i
+          endResidue = line[33..36].to_i
+          chain = line[19].strip
+          text = "RALPHA"
+          if (type ==2)
+            text = "ROMEGA"
+          elsif (type ==3)
+            text = "RPI"
+          elsif (type ==4)
+            text = "RGAMMA"
+          elsif (type ==5)
+            text = "R310"
+          elsif (type ==6)
+            text = "LALPHA"
+          elsif (type ==7)
+            text = "LOMEGA"
+          elsif (type ==8)
+            text = "LGAMMA"
+          elsif (type ==9)
+            text = "HELIX27"
+          elsif (type ==10)
+            text = "POLYP"
+          end
+
+          output << SSObject.new(text, startResidue, endResidue, chain, type)
+
+        elsif ele[0] == "SHEET"
+          startResidue = line[22..25].to_i
+          endResidue = line[33..36].to_i
+          chain = line[21].strip
+          type = 0
+          output << SSObject.new("SHEET", startResidue, endResidue, chain, type)
+        elsif ele[0] == "TURN"
+          startResidue = line[20..23].to_i
+          endResidue = line[31..34].to_i
+          chain = line[19].strip
+          type=0
+          output << SSObject.new("TURN", startResidue, endResidue, chain,type)
+        end
+      end
+      return output
+    end
+
+
+
     def calculateCenteringCoordinates
       x=0
       y=0
@@ -724,6 +822,11 @@ module PDB
   end
   module_function :extract_sequence
 
+  def get_chain_ids
+    return @active_set.molecules.keys
+  end
+  module_function :get_chain_ids
+
 
   def convert_to_bead_model(dmax, bead_radius, atoms)
     # atoms should be centered
@@ -766,8 +869,6 @@ module PDB
         end
       end # end of j loop
     end # end of k loop
-
-
 
   end
   module_function :convert_to_bead_model

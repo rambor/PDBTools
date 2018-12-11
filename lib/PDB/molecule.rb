@@ -65,7 +65,6 @@ module PDB
 
       reset_extremes
       @centering_coordinates=Array.new(3)
-
     end
 
 
@@ -75,30 +74,57 @@ module PDB
       begin
 
         @chain ||= atom.chain
-        raise ("CHAIN MISMATCH FOR NEW ATOM #{@chain} != #{atom.chain} FOR ATOM #{atom.index}") unless atom.chain == @chain
+        raise ("CHAIN MISMATCH FOR NEW ATOM #{@chain} != #{atom.chain} FOR ATOM #{atom.atom_number}") unless atom.chain == @chain
+        raise ("NONSENSE NEW ATOM NUMBER : #{atom.atom_number}  #{atom.chain} INDEX #{atom.resid}") unless atom.atom !~ /[0-9]+/
 
         # get resid
         # if resid is not found, make new resid
         # molecule is managed as a collection of residues
-        if !@residues.last.nil? && @residues.last.resid == atom.resid
+
+        # insertion residues may occur in the PDB where two aminoacids have same RESID
+        # igore alternates but keep insertions
+        #
+        if !@residues.last.nil? && @residues.last.resid == atom.resid && @residues.last.resname == atom.residue && @residues.last.alt == atom.alt && @residues.last.icode == atom.icode
           @residues.last.add_atom(atom)
+        elsif !@residues.last.nil? && @residues.last.resid == atom.resid && @residues.last.resname != atom.residue && atom.icode.size > 0
+          @residues.push(Residue.new(atom))
         else
-          current_residue = checkForResid(atom.resid)
-          if current_residue.nil?
+          #current_residue = checkForResid(atom.resid)
+          current_residue = checkForResidue(atom)
+
+          if current_residue.nil?  # no prior resid found
             @residues.push(Residue.new(atom))
-          else
+          elsif !@residues.last.nil? && @residues.last.resid == atom.resid && @residues.last.icode != atom.icode # insertion
+            @residues.push(Residue.new(atom))
+          else # if RESID is duplicated by iCode is different
             current_residue.add_atom(atom)
           end
+
         end
 
-
         checkIfExtrema(atom)
-        @total += 1
+        @total += 1 # total atoms added
+
       rescue => error
         PDB::report_error("#{error.class} and #{error.message} : #{atom.inspect} ")
       end
     end
 
+
+
+    def checkForResidue(atom)
+      if @residues.size == 0
+        return nil
+      else
+        @residues.each do |residue|
+          if residue.resid == atom.resid && residue.icode == atom.icode
+            return residue
+          end
+        end
+
+        return nil
+      end
+    end
 
 
     def checkForResid(resid)
@@ -131,10 +157,10 @@ module PDB
     # Resids are also collected for each chain
     def extractSequence
 
-
       @index_of_last_residue_added = @residues.first.resid;
       #@sequence << first
       @residues.each do |res|
+
         @sequence << res.resname
         @resids << res.resid
 
@@ -144,8 +170,7 @@ module PDB
         end
 
         @index_of_last_residue_added = res.resid
-
-        end
+      end
     end
 
 
@@ -163,6 +188,57 @@ module PDB
       end
       @mass
     end
+
+
+    def getTotalResidues
+      return @residues.length
+    end
+
+
+    # locate a sequence of 3 residues
+    # residues must be in three letter codes
+    # returns starting index if found, otherwise -1
+    def findTriplet(triplet, startAt)
+
+      first = triplet[0..2]
+      middle = triplet[3..5]
+      third = triplet[6..8]
+
+      tempArray = @residues.to_a
+      totalInArray = @residues.length
+
+      for i in startAt...(totalInArray-2)
+
+        if tempArray[i] == first && tempArray[i+1] == middle && tempArray[i+2] == third
+          # found it so break and return index
+          return i
+        end
+      end
+
+      return -1 # nothing found
+    end
+
+    # locate a pair of residues in sequence
+    # residues must be in three letter codes
+    # returns starting index if found, otherwise -1
+    def findDoublet(doublet, startAt)
+      first = doublet[0..2]
+      last = doublet[3..5]
+
+      tempArray = @residues.to_a
+      totalInArray = @residues.length
+
+      for i in startAt...(totalInArray-1)
+        # puts "#{tempArray[i]} #{tempArray[i+1]}"
+        if tempArray[i].resname == first && tempArray[i+1].resname == last
+          # found it so break and return index
+          return i
+        end
+      end
+
+      return -1 # nothing found
+    end
+
 
     # read in a fasta file and compare sequence to sequence
     # PDB could be more or less than input FASTA
@@ -203,7 +279,7 @@ module PDB
     end
 
 
-    def writeSequenceToCNSFormat (filename, type)
+    def writeSequenceToCNSFormat(filename, type)
 
       type ||= "protein"
       totalInSequence = @sequence.size
