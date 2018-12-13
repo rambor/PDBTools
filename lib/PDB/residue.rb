@@ -136,8 +136,8 @@ module PDB
     #
     # @param value String (HELIX, SHEET, TURN)
     # @param subtype (index)
-    def setSecondaryStructure(value, subtype)
-      @ss = SecondaryStructure.new(value, subtype)
+    def setSecondaryStructure(ssString, subtype)
+      @ss = SecondaryStructure.new(ssString, subtype)
     end
 
     def validate
