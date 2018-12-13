@@ -45,7 +45,7 @@ module PDB
       @zpos = line[46,8].to_f
 
       @atom = line[76,2].strip
-      @old = line
+      @old = line[76,2].strip
 
       #if (@atom =~ /[0-9]+/)
         @atom = ""
