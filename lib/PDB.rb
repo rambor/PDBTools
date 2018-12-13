@@ -14,7 +14,7 @@ module PDB
 
   AMINOACIDS = %w{ALA VAL ILE LEU MET PHE TYR TRP ARG HIS LYS ASP GLU SER THR ASN GLN CYS GLY PRO PCA}
   NUCLEICACIDS = %w{ADE GUA URI CYT THY XAN HYP ORO}
-  
+
   class Model
 
     # active_set array of atoms that are in use
@@ -130,6 +130,88 @@ module PDB
     end
 
 
+    def updateSecondaryStructure(stride_file)
+
+      @molecules.each_value do |val|
+        val.residues.each do |residue|
+          # if resid of residue is within range of ss
+          residue.setSecondaryStructure("OTHER", 0)
+          residue.validate
+        end
+      end
+
+
+      sslines =[]
+      sslines = File.readlines(stride_file)
+      loclines = sslines.select{|x| x =~ /^LOC/}
+      loclines.select!{|x| !x.include?("Disulfide")}
+
+      #set based on ASG to capture bridge assignments
+      asglines = sslines.select{|x| x =~ /^ASG/ && x.upcase.include?("BRIDGE") }
+      asglines.each do |line|
+        eles = line.split(/[\s\t]+/)
+        resid = eles[3].to_i
+        ssType = eles[6].upcase
+        type=0
+        ch = eles[2]
+        residues =  @molecules.has_key?(ch.to_sym) ? @molecules[ch.to_sym].residues : Array.new
+        residues.each do |resi|
+          if (resi.resid == resid)
+            resi.setSecondaryStructure(ssType, type)
+            break
+          end
+        end
+      end
+
+
+      output=[]
+      loclines.each do |line|
+        elements = line.split(/[\s\t]+/)
+        startIndex = elements[3].to_i
+        endIndex = elements[6].to_i
+        ch = elements[4]
+        ssType = elements[1].upcase
+        type = 0
+        if (ssType == "STRAND")
+          ssType = "SHEET"
+        elsif (ssType == "ALPHAHELIX")
+          type = 1
+          ssType = "RALPHA"
+        elsif (ssType == "310HELIX")
+          type = 5
+          ssType = "R310"
+        elsif (ssType == "PIHELIX")
+          type = 3
+          ssType = "RPI"
+        elsif (ssType.include?("TURN"))
+          if ssType.include?("\'")
+            ssType.gsub!(/\'/,'prime')
+            type = 111
+          end
+          #typeof = ssType.split(/TURN/)[]
+        elsif (ssType == "")
+        end
+        output << SSObject.new(ssType, startIndex, endIndex, ch, type)
+      end
+
+
+      output.each do |assignment|
+        startIndex = assignment.start
+        endIndex = assignment.end
+        ch = assignment.chain
+        ssType = assignment.type
+        #puts "ASSIGNMENT #{ch} #{startIndex} #{endIndex} #{ssType}"
+        residues =  @molecules.has_key?(ch.to_sym) ? @molecules[ch.to_sym].residues : Array.new
+        residues.each do |resi|
+          if (resi.resid == startIndex && startIndex <= endIndex)
+            resi.setSecondaryStructure(ssType, assignment.ss_subclass)
+            startIndex+=1
+          elsif (startIndex > endIndex)
+            break
+          end
+        end
+      end # end ssLines
+    end
 
     # Select Atoms by Attribute making a copy of the atom, only selects as AND statements (or intersections)
     # :atom_type => {:CA => true}
