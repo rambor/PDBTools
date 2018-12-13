@@ -2,6 +2,13 @@
 
 module PDB
 
+  # From Stride Documentation
+  # H alpha helix
+  # G 3-10
+  # I PI helix
+  # Extended conformation
+  # T turn - many types
+  # C coil
   class SecondaryStructure
 
     attr_reader :structure, :subtype_index
@@ -12,4 +19,6 @@ module PDB
     end
 
   end
+
+
 end
