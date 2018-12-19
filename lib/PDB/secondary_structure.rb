@@ -8,7 +8,8 @@ module PDB
   # I PI helix
   # Extended conformation
   # T turn - many types
-  # C coil
+  # C coil -> we use OTHER
+  # B bridge
   class SecondaryStructure
 
     attr_reader :structure, :subtype_index

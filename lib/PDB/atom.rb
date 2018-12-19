@@ -20,36 +20,55 @@ module PDB
     @@masses["CA"] = 40.078
     @@masses["SE"] = 78.971
 
-    def initialize(line)
+    def initialize(*args)
 
-      if !(line =~ /ATOM/)
-        raise ("Not a PDB formatted line")
-      end
+      if (args.size == 1) # assume a line
 
-      @atom_number = line[6,5].to_i
-      @atom_type = line[12,4].strip
+        line = args[0]
+        if !(line =~ /ATOM/)
+          raise ("Not a PDB formatted line")
+        end
 
-      @residue = line[17,3].strip # such as GLY, ADE
+        @atom_number = line[6,5].to_i
+        @atom_type = line[12,4].strip
 
-      @residue_type = "" # protein, nucleic acid, etc
+        @residue = line[17,3].strip # such as GLY, ADE
 
-      @alt = line[16].strip # alternate location
+        @residue_type = "" # protein, nucleic acid, etc
 
-      @resid = line[22,4].to_i
-      @icode = line[26].strip # insertion
-      @chain = line[21].strip
+        @alt = line[16].strip # alternate location
+
+        @resid = line[22,4].to_i
+        @icode = line[26].strip # insertion
+        @chain = line[21].strip
 
 
-      @xpos = line[30,8].to_f
-      @ypos = line[38,8].to_f
-      @zpos = line[46,8].to_f
+        @xpos = line[30,8].to_f
+        @ypos = line[38,8].to_f
+        @zpos = line[46,8].to_f
 
-      @atom = line[76,2].strip
-      @old = line[76,2].strip
+        @atom = line[76,2].strip
+        @old = line[76,2].strip
 
-      #if (@atom =~ /[0-9]+/)
+        #if (@atom =~ /[0-9]+/)
         @atom = ""
-      #end
+        #end
+
+        @occ = line[54,6].to_f
+        @temp = line[60,6].to_f
+      else # [atom_number, atomtype, residue, residue_type, chain, xpos, ypos, zpos]
+        @atom_number = args[0].to_i
+        @atom_type = args[1]
+        @residue = args[2]
+        @residue_type = args[3]
+        @chain = args[4]
+        @xpos = args[5].to_f
+        @ypos = args[6].to_f
+        @zpos = args[7].to_f
+        @atom=""
+        @temp = 0.0f
+        @occ = 1.0f
+      end
 
       if @atom_type == "O1P"
         @atom_type = "OP1"
@@ -60,9 +79,6 @@ module PDB
         @atom_type = "OP2"
         @atom = "P"
       end
-
-      @occ = line[54,6].to_f
-      @temp = line[60,6].to_f
 
       setMass()
 
@@ -117,6 +133,19 @@ module PDB
       @ypos -= y
       @zpos -= z
     end
+
+    def set_resid(newresie)
+      @resid = newresie
+    end
+
+    def set_resname(newresie)
+      @residue = newresie
+    end
+
+    def set_residue_type(newresie)
+      @residue_type = newresie
+    end
+
 
     def setMass()
 
