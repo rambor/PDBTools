@@ -20,6 +20,7 @@ module PDB
     @@masses["CA"] = 40.078
     @@masses["SE"] = 78.971
 
+
     def initialize(*args)
 
       if (args.size == 1) # assume a line
@@ -66,8 +67,8 @@ module PDB
         @ypos = args[6].to_f
         @zpos = args[7].to_f
         @atom=""
-        @temp = 0.0f
-        @occ = 1.0f
+        @temp = 0.0
+        @occ = 1.0
       end
 
       if @atom_type == "O1P"
@@ -88,45 +89,109 @@ module PDB
       @residue_type = type
     end
 
-    # Convert 3-letter residue to 1-letter
-    # input is a string
-    def convert_to_one_letter(residue)
+    #Convert 3-letter residue to 1-letter
+    #input is a string
+    def convert_to_one_letter()
+
       res = {
-          "GUA" => "G",
-          "ADE" => "A",
-          "CYT" => "C",
-          "URI" => "U",
-          "THY" => "T",
-          "Gr" => "G",
-          "Ar" => "A",
-          "Cr" => "C",
-          "Ur" => "U",
-          "ALA" => "A",
-          "ARG" => "R",
-          "ASN" => "N",
-          "ASP" => "D",
-          "CYS" => "C",
-          "GLU" => "E",
-          "GLN" => "Q",
-          "GLY" => "G",
-          "HIS" => "H",
-          "ILE" => "I",
-          "LEU" => "L",
-          "LYS" => "K",
-          "MET" => "M",
-          "PHE" => "F",
-          "PRO" => "P",
-          "SER" => "S",
-          "THR" => "T",
-          "TRP" => "W",
-          "TYR" => "Y",
-          "VAL" => "V",
-          "SEC" => "U",
-          "PCA" => "J"
+        "GUA" => "G",
+        "ADE" => "A",
+        "CYT" => "C",
+        "URI" => "U",
+        "THY" => "T",
+        "Gr" => "G",
+        "Ar" => "A",
+        "Cr" => "C",
+        "Ur" => "U",
+        "ALA" => "A",
+        "ARG" => "R",
+        "ASN" => "N",
+        "ASP" => "D",
+        "CYS" => "C",
+        "GLU" => "E",
+        "GLN" => "Q",
+        "GLY" => "G",
+        "HIS" => "H",
+        "ILE" => "I",
+        "LEU" => "L",
+        "LYS" => "K",
+        "MET" => "M",
+        "PHE" => "F",
+        "PRO" => "P",
+        "SER" => "S",
+        "THR" => "T",
+        "TRP" => "W",
+        "TYR" => "Y",
+        "VAL" => "V",
+        "SEC" => "U",
+        "PCA" => "J"
       }
 
       return res[residue]
     end
+
+
+    def convert_to_three_letter()
+
+      returnMe = ""
+
+      begin
+
+        if (@residue_type == "protein")
+          res = {
+            "A" => "ALA",
+            "R" => "ARG",
+            "N" => "ASN",
+            "D" => "ASP",
+            "C" => "CYS",
+            "E" => "GLU",
+            "Q" => "GLN",
+            "G" => "GLY",
+            "H" => "HIS",
+            "I" => "ILE",
+            "L" => "LEU",
+            "K" => "LYS",
+            "M" => "MET",
+            "F" => "PHE",
+            "P" => "PRO",
+            "S" => "SER",
+            "T" => "THR",
+            "W" => "TRP",
+            "Y" => "TYR",
+            "V" => "VAL",
+            "U" => "SEC",
+            "J" => "PCA"
+          }
+
+          if res.has_key?(@residue)
+            returnMe = res[@residue]
+          else
+            raise "residue not found in protein sequence"
+          end
+        elsif (@residue_type == "nucleic")
+          res = {
+            "G" => "GUA",
+            "A" => "ADE",
+            "C" => "CYT",
+            "U" => "URI",
+            "T" => "THY"
+          }
+
+          if res.has_key?(@residue)
+            returnMe = res[@residue]
+          else
+            raise "residue not found in nucleic sequence"
+          end
+        end
+
+      rescue => error
+        PDB::report_error("#{error.class} and #{error.message} : #{@residue} ")
+      end
+
+      return returnMe
+    end
+
+
 
     def centerOn(x,y,z)
       @xpos -= x

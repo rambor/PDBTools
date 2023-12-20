@@ -90,6 +90,9 @@ module PDB
           residue.setSecondaryStructure("OTHER", 0)
           residue.validate
         end
+
+        val.set_molecule_type
+
       end
 
       # iterate through residues in chain and assign SS
@@ -144,15 +147,18 @@ module PDB
       sslines =[]
       sslines = File.readlines(stride_file)
       loclines = sslines.select{|x| x =~ /^LOC/}
-      loclines.select!{|x| !x.include?("Disulfide")}
+      #loclines.select!{|x| !x.include?("Disulfide") }
+      loclines.select!{|x| x.include?("Turn") } # only use LOC lines to update the turn types
 
-      #set based on ASG to capture bridge assignments
-      asglines = sslines.select{|x| x =~ /^ASG/ && x.upcase.include?("BRIDGE") }
+      # set based on ASG to capture bridge assignments
+      # want to use the assignments from ASG lines per residue but use LOC to determine TURN types
+      # asglines = sslines.select{|x| x =~ /^ASG/ && x.upcase.include?("BRIDGE") }
+      asglines = sslines.select{|x| x =~ /^ASG/ }
       asglines.each do |line|
         eles = line.split(/[\s\t]+/)
         resid = eles[3].to_i
-        ssType = eles[6].upcase
-        type=0
+        ssType = convertSS(eles[6].upcase)
+        type = getSSSubClassType(ssType)
         ch = eles[2]
         residues =  @molecules.has_key?(ch.to_sym) ? @molecules[ch.to_sym].residues : Array.new
         residues.each do |resi|
@@ -163,6 +169,8 @@ module PDB
         end
       end
 
+      # all residue secondary structure assignements are made by ASG
+      # next, we update the turn types using information in LOC
 
       output=[]
       loclines.each do |line|
@@ -170,27 +178,10 @@ module PDB
         startIndex = elements[3].to_i
         endIndex = elements[6].to_i
         ch = elements[4]
-        ssType = elements[1].upcase
-        type = 0
-        if (ssType == "STRAND")
-          ssType = "SHEET"
-        elsif (ssType == "ALPHAHELIX")
-          type = 1
-          ssType = "RALPHA"
-        elsif (ssType == "310HELIX")
-          type = 5
-          ssType = "R310"
-        elsif (ssType == "PIHELIX")
-          type = 3
-          ssType = "RPI"
-        elsif (ssType.include?("TURN"))
-          if ssType.include?("\'")
-            ssType.gsub!(/\'/,'prime')
-            type = 111
-          end
-          #typeof = ssType.split(/TURN/)[]
-        elsif (ssType == "")
-        end
+        ssType = convertSS(elements[1].upcase)
+        type = getSSSubClassType(ssType)
+
+        # SSObject = Struct.new(:type, :start, :end, :chain, :ss_subclass)
         output << SSObject.new(ssType, startIndex, endIndex, ch, type)
       end
 
@@ -203,7 +194,7 @@ module PDB
         #puts "ASSIGNMENT #{ch} #{startIndex} #{endIndex} #{ssType}"
         residues =  @molecules.has_key?(ch.to_sym) ? @molecules[ch.to_sym].residues : Array.new
         residues.each do |resi|
-          if (resi.resid == startIndex && startIndex <= endIndex)
+          if (resi.resid == startIndex && startIndex <= endIndex && resi)
             resi.setSecondaryStructure(ssType, assignment.ss_subclass)
             startIndex+=1
           elsif (startIndex > endIndex)
@@ -248,7 +239,7 @@ module PDB
 
       remove_duplicate_atom_selections(@active_set)
 
-#
+      #
       # if active_set is empty, assume we select all
       if @active_set.size == 0
         puts "Filling? #{@active_set.size}"
@@ -284,19 +275,19 @@ module PDB
       selection_hash.each_pair do |attribute, parameters|
         # iterate over each molecule, concatenate for each time it is true
         raise ArgumentError.new("Property not found in Atom Class #{attribute}") unless PDB::Atom.method_defined? attribute
-          #
-          # type_symbol = :CA, :CB, :CHAIN_IDENTIFIER
-          # value = true or false
-          parameters.each_pair do |type_symbol, value|
+        #
+        # type_symbol = :CA, :CB, :CHAIN_IDENTIFIER
+        # value = true or false
+        parameters.each_pair do |type_symbol, value|
 
-            type = (type_symbol.is_a? Symbol) ? type_symbol.to_s.upcase : type_symbol.upcase
+          type = (type_symbol.is_a? Symbol) ? type_symbol.to_s.upcase : type_symbol.upcase
 
-            if !value
-              PDB::report_log("SELECTOR : REMOVING #{attribute} => #{type}")
-              #temp.concat( array_of_atoms.select{|atom| atom.send(attribute) != type} )
-              temp.concat( array_of_atoms.delete_if{|atom| atom.send(attribute) == type} )
-            end
+          if !value
+            PDB::report_log("SELECTOR : REMOVING #{attribute} => #{type}")
+            #temp.concat( array_of_atoms.select{|atom| atom.send(attribute) != type} )
+            temp.concat( array_of_atoms.delete_if{|atom| atom.send(attribute) == type} )
           end
+        end
       end
     end
 
@@ -520,7 +511,7 @@ module PDB
         end
 
         if atom.residue.size == 1
-          newLines << sprintf("ATOM  %5s %-4s %3s %1s%4s    %8.3f%8.3f%8.3f%6.2f%6.2f          %2s\n", count, atom.atom_type, convert_to_3_letter(atom.residue, atom.atom_type), atom.chain, atom.resid, atom.xpos, atom.ypos, atom.zpos, atom.occ, atom.temp, atom.atom)
+          newLines << sprintf("ATOM  %5s %-4s %3s %1s%4s    %8.3f%8.3f%8.3f%6.2f%6.2f          %2s\n", count, atom.atom_type, atom.convert_to_three_letter(), atom.chain, atom.resid, atom.xpos, atom.ypos, atom.zpos, atom.occ, atom.temp, atom.atom)
         elsif atom.residue.size == 3
           newLines << sprintf("ATOM  %5s %-4s %3s %1s%4s    %8.3f%8.3f%8.3f%6.2f%6.2f          %2s\n", count, atom.atom_type, atom.residue, atom.chain, atom.resid, atom.xpos, atom.ypos, atom.zpos, atom.occ, atom.temp, atom.atom)
         else
@@ -748,13 +739,13 @@ module PDB
       # add additional points from random selection
       if total_to_select > 4
         for i in 4...total_to_select
-            for j in 0...14
-              temp = points.select{|p| p.xpos == @extrema[j].xpos}
-              if temp.size == 0
-                @points[i] = @extrema[j].dup
-                break
-              end
+          for j in 0...14
+            temp = points.select{|p| p.xpos == @extrema[j].xpos}
+            if temp.size == 0
+              @points[i] = @extrema[j].dup
+              break
             end
+          end
         end
       end
 
@@ -841,6 +832,42 @@ module PDB
         end
       end
       return output
+    end
+
+    def convertSS(ssType)
+      if (ssType == "STRAND")
+        ssType = "SHEET"
+      elsif (ssType == "ALPHAHELIX")
+        ssType = "RALPHA"
+      elsif (ssType == "310HELIX")
+        ssType = "R310"
+      elsif (ssType == "PIHELIX")
+        ssType = "RPI"
+      elsif (ssType.include?("TURN"))
+        if ssType.include?("\'")
+          ssType.gsub!(/\'/,'prime')
+        end
+        #typeof = ssType.split(/TURN/)[]
+      elsif (ssType == "")
+
+      end
+
+      return ssType
+    end
+
+    def getSSSubClassType(ssType)
+      type = 0 # sheet is default for 0
+      if (ssType == "RALPHA")
+        type = 1
+      elsif (ssType == "R310")
+        type = 5
+      elsif (ssType == "RPI")
+        type = 3
+      elsif (ssType.include?("TURN"))
+        type = 111
+      end
+
+      return type
     end
 
 
@@ -968,39 +995,39 @@ module PDB
   def convert_to_one_letter(residue)
 
     res = {
-        :GUA => "G",
-        :ADE => "A",
-        :CYT => "C",
-        :URI => "U",
-        :THY => "T",
-        :Gr  => "G",
-        :Ar  => "A",
-        :Cr  => "C",
-        :Ur  => "U",
-        :ALA => "A",
-        :ARG => "R",
-        :ASN => "N",
-        :ASP => "D",
-        :ASX => "B",
-        :CYS => "C",
-        :GLU => "E",
-        :GLN => "Q",
-        :GLX => "Z",
-        :GLY => "G",
-        :HIS => "H",
-        :ILE => "I",
-        :LEU => "L",
-        :LYS => "K",
-        :MET => "M",
-        :PHE => "F",
-        :PRO => "P",
-        :SER => "S",
-        :THR => "T",
-        :TRP => "W",
-        :TYR => "Y",
-        :VAL => "V",
-        :SEC => "U",
-        :PCA => "J"
+      :GUA => "G",
+      :ADE => "A",
+      :CYT => "C",
+      :URI => "U",
+      :THY => "T",
+      :Gr  => "G",
+      :Ar  => "A",
+      :Cr  => "C",
+      :Ur  => "U",
+      :ALA => "A",
+      :ARG => "R",
+      :ASN => "N",
+      :ASP => "D",
+      :ASX => "B",
+      :CYS => "C",
+      :GLU => "E",
+      :GLN => "Q",
+      :GLX => "Z",
+      :GLY => "G",
+      :HIS => "H",
+      :ILE => "I",
+      :LEU => "L",
+      :LYS => "K",
+      :MET => "M",
+      :PHE => "F",
+      :PRO => "P",
+      :SER => "S",
+      :THR => "T",
+      :TRP => "W",
+      :TYR => "Y",
+      :VAL => "V",
+      :SEC => "U",
+      :PCA => "J"
     }
 
     residue = residue.upcase.to_sym
@@ -1024,9 +1051,9 @@ module PDB
 
     File.open('PDBTools_errors.txt', 'a') do |file|
       file.puts  "#{Time.now.strftime("%d-%m-%Y %H:%M")}  #{error_message}"
-     # (Thread.current[:errors] ||= []).each do |error|
-     #   file.puts error
-     # end
+      # (Thread.current[:errors] ||= []).each do |error|
+      #   file.puts error
+      # end
     end
   end
   module_function :report_error

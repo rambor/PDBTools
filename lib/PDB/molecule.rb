@@ -3,6 +3,7 @@ require "PDB/atom"
 require "PDB/residue"
 require 'linked-list'
 require 'PDB/fasta'
+require 'Set'
 
 module PDB
   #
@@ -55,7 +56,7 @@ module PDB
       @total=0
       @mass=0
       @sequence=[] # use chain ID as key and sequence array as value
-      @resids=[]   # use chain ID as key and sequence array as value
+      @resids=[]   #
       @chain_breaks=[]
 
       @residues = LinkedList::List.new
@@ -244,7 +245,7 @@ module PDB
     # PDB could be more or less than input FASTA
     def compareToFasta(filename)
 
-        fasta = Fasta.new(filename)
+      fasta = Fasta.new(filename)
 
       # residues may not start in same place
       # can FASTA sequence be smaller than PDB sequence?
@@ -310,34 +311,34 @@ module PDB
 
     # Convert 3-letter residue to 1-letter
     # input is a string
-    def convertTo3Letter(residue, type)
-
-      begin
-
-        if (type == "protein")
-
-          if @@protein.has_key? (residue)
-            returnMe = @@protein[residue]
-          else
-            raise "residue not found in protein sequence"
-          end
-
-        elsif (type == "nucleic")
-
-          if @@nucleic.has_key? (residue)
-            returnMe = @@nucleic[residue]
-          else
-            raise "residue not found in nucleic sequence"
-          end
-
-        end
-
-      rescue => error
-        PDB::report_error("#{error.class} and #{error.message} : #{residue} ")
-      end
-
-      returnMe
-    end
+    # def convertTo3Letter(residue, type)
+    #
+    #   begin
+    #
+    #     if (type == "protein")
+    #
+    #       if @@protein.has_key? (residue)
+    #         returnMe = @@protein[residue]
+    #       else
+    #         raise "residue not found in protein sequence"
+    #       end
+    #
+    #     elsif (type == "nucleic")
+    #
+    #       if @@nucleic.has_key? (residue)
+    #         returnMe = @@nucleic[residue]
+    #       else
+    #         raise "residue not found in nucleic sequence"
+    #       end
+    #
+    #     end
+    #
+    #   rescue => error
+    #     PDB::report_error("#{error.class} and #{error.message} : #{residue} ")
+    #   end
+    #
+    #   returnMe
+    # end
 
 
     def select_random_extrema(total_to_select)
@@ -377,20 +378,20 @@ module PDB
 
         anchor = @extrema[i]
 
-          delx = points[0].xpos - anchor.xpos
-          dely = points[0].ypos - anchor.ypos
-          delz = points[0].zpos - anchor.zpos
+        delx = points[0].xpos - anchor.xpos
+        dely = points[0].ypos - anchor.ypos
+        delz = points[0].zpos - anchor.zpos
 
-          delx2 = points[1].xpos - anchor.xpos
-          dely2 = points[1].ypos - anchor.ypos
-          delz2 = points[1].zpos - anchor.zpos
+        delx2 = points[1].xpos - anchor.xpos
+        dely2 = points[1].ypos - anchor.ypos
+        delz2 = points[1].zpos - anchor.zpos
 
-          dis2 = Math::sqrt(delx*delx + dely*dely + delz*delz) + Math::sqrt(delx2*delx2 + dely2*dely2 + delz2*delz2)
+        dis2 = Math::sqrt(delx*delx + dely*dely + delz*delz) + Math::sqrt(delx2*delx2 + dely2*dely2 + delz2*delz2)
 
-          if dis2 > prior
-            points[2] = @extrema[i]
-            prior = dis2
-          end
+        if dis2 > prior
+          points[2] = @extrema[i]
+          prior = dis2
+        end
       end
 
       # find fourth point
@@ -411,12 +412,12 @@ module PDB
         anchor = @extrema[i]
         #if anchor.atom_number != points[0].atom_number && anchor.atom_number != points[1].atom_number && anchor.atom_number != points[2].atom_number
 
-          dis = (anchor.xpos*a_coeff + anchor.ypos*b_coeff + anchor.zpos*c_coeff - d_coeff).abs * inv_coeff
+        dis = (anchor.xpos*a_coeff + anchor.ypos*b_coeff + anchor.zpos*c_coeff - d_coeff).abs * inv_coeff
 
-          if (dis > prior)
-            points[3] = @extrema[i]
-            prior = dis
-          end
+        if (dis > prior)
+          points[3] = @extrema[i]
+          prior = dis
+        end
         #end
       end
 
@@ -521,7 +522,57 @@ module PDB
     private :reset_extremes
 
 
-  end # end of class definition
+    def renumber_sequence(start_at_this_number)
+      add_this_to_resID =  start_at_this_number - @residues.first.resid
+      @residues.each do |residue|
+        residue.updateResID(residue.resid + add_this_to_resID)
+      end
+    end
 
+    def set_molecule_type
+
+      nucleic_set = Set.new
+      protein_set = Set.new
+
+      # if only contains GCUTA
+
+      @residues.each do |residue|
+
+        if residue.resname.size == 1
+
+          if (!@@nucleic[residue.resname].nil?)
+            nucleic_set.add?(residue.resname)
+          end
+
+          if (!@@protein[residue.resname].nil?)
+            protein_set.add?(residue.resname)
+          end
+        else # 3 letter is more unambiguous
+          if @@nucleic.value?(residue.resname)
+            nucleic_set.add?(residue.resname)
+          end
+
+          if @@protein.value?(residue.resname)
+            protein_set.add?(residue.resname)
+          end
+
+        end
+
+      end
+
+      residue_type = "protein"
+      # if only GCAU or T, both will have same value
+      if nucleic_set.size <= 5 && protein_set.size <= 5
+        residue_type = "nucleic"
+      end
+
+      @residues.each do |residue|
+        residue.setResidueType(residue_type)
+      end
+
+    end
+
+
+  end # end of class definition
 
 end

@@ -30,7 +30,7 @@ module PDB
     AMINO_ACID_SIZES["PCA"]=7
     AMINO_ACID_SIZES["UNK"]=4
 
-    attr_reader :valid, :resid, :resname, :chain, :ss, :atoms, :alt, :alternates, :icode
+    attr_reader :valid, :resid, :resname, :chain, :ss, :atoms, :alt, :alternates, :icode, :residue_type
 
     def initialize(atom)
       @atoms=[]
@@ -148,6 +148,19 @@ module PDB
       end
     end
 
+    def updateResID(newResId)
+      @resid = newResId
+      @atoms.each do |atom|
+        atom.set_resid(newResId)
+      end
+    end
+
+    def setResidueType(type)
+      @residue_type = type
+      @atoms.each do |atom|
+        atom.setResidueType(type)
+      end
+    end
 
   end
 end
