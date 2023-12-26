@@ -194,7 +194,7 @@ module PDB
         #puts "ASSIGNMENT #{ch} #{startIndex} #{endIndex} #{ssType}"
         residues =  @molecules.has_key?(ch.to_sym) ? @molecules[ch.to_sym].residues : Array.new
         residues.each do |resi|
-          if (resi.resid == startIndex && startIndex <= endIndex && resi)
+          if resi.resid == startIndex && startIndex <= endIndex && resi.ss.structure.include?("TURN")
             resi.setSecondaryStructure(ssType, assignment.ss_subclass)
             startIndex+=1
           elsif (startIndex > endIndex)
