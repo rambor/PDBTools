@@ -92,7 +92,6 @@ module PDB
         end
 
         val.set_molecule_type
-
       end
 
       # iterate through residues in chain and assign SS
@@ -848,8 +847,10 @@ module PDB
           ssType.gsub!(/\'/,'prime')
         end
         #typeof = ssType.split(/TURN/)[]
-      elsif (ssType == "")
-
+      elsif (ssType.include?("COIL"))
+        ssType = "OTHER"
+      else
+        ssType = "OTHER"
       end
 
       return ssType
